@@ -1,6 +1,6 @@
 {
   "name": "@genclabs/dfsclient",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "GenC Labs DFS Client",
   "main": "index.js",
   "scripts": {
@@ -14,5 +14,9 @@
     "path": "^0.12.7",
     "request": "^2.88.0",
     "url": "^0.11.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GenCLabs/angelonetwork-sdk-for-javascript-v1.git"
   }
 }
