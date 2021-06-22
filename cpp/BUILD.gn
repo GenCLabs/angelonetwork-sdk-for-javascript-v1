@@ -1,0 +1,19 @@
+#import("//cpp/cryptopp/cryptopp.gni")
+
+#action("build_cryptopp"){
+# script = "make"
+# outputs = ["$target_gen_dir/build_cryptopp.out"]
+# args = ["-C", "../cryptopp/src/"] 
+#}
+executable("crypto") {
+  sources = [                 
+    "crypto/main.cpp",
+    "cryptolib/aes.cpp", 
+    "cryptolib/ecc.cpp",
+    "cryptolib/cryptocommon.cpp",
+    "cryptolib/cryptolib.cpp"
+  ]
+  include_dirs = ["cryptolib", "cryptopp/src"]
+  deps = ["//cryptopp:cryptopp"]
+  #deps = [":build_cryptopp"]
+}
