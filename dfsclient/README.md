@@ -1,10 +1,10 @@
-DFS Client library
+# DFS Client library
 
-##Installation
+## Installation
 
 npm i @genclabs/dfsclient
 
-###Usage
+### Usage
 
 const {clientdfs} = require('@genclabs/dfsclient')
 
