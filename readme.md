@@ -8,7 +8,11 @@ npm install -g gn-node
 ```
 
 ## Step 2:  Build crypto
-
+Update submodule projects
+```
+git submodule update --init
+```
+Run build script
 ```
 cd cpp
 ./build.sh
