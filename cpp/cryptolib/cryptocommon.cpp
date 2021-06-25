@@ -1,7 +1,7 @@
 #include "cryptolib.h"
 #include "aes.h"
 #include "ecc.h"
-
+#include "hex.h"
 #include "files.h"
 using CryptoPP::FileSource;
 using CryptoPP::FileSink;
@@ -14,7 +14,16 @@ using CryptoPP::Redirector;
 #include "modes.h"
 
 #include "base64.h"
-std::string EncodeBase64(byte* message, int length){
+std::string Hex(const byte* message, int length) {
+    std::string strout;
+    CryptoPP::HexEncoder encoder(new CryptoPP::StringSink(strout));
+    //std::cout << "key: ";
+    encoder.Put(message, length);
+    encoder.MessageEnd();
+    //std::cout << std::endl;
+    return strout;
+}
+std::string EncodeBase64(const byte* message, int length){
   std::string encoded;
   //CryptoPP::StringSource ss(message, length, true, new CryptoPP::Base64Encoder(new CryptoPP::StringSink(encoded)));
   CryptoPP::Base64Encoder encoder;
@@ -26,6 +35,9 @@ std::string EncodeBase64(byte* message, int length){
     encoded.resize(size);
     encoder.Get((byte*)&encoded[0],encoded.size());
   }
+  //encoded.replace(0x10, '');
+  encoded.erase(std::remove(encoded.begin(), encoded.end(), '\r'), encoded.end());
+  encoded.erase(std::remove(encoded.begin(), encoded.end(), '\n'), encoded.end());
   return encoded;
 }
 void DecodeBase64(const std::string& message, byte*& outMessage, int& outlength){

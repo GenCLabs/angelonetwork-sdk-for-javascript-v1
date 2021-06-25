@@ -256,7 +256,6 @@
     <ClCompile Include="../cryptopp/src/kalyna.cpp" />
     <ClCompile Include="../cryptopp/src/kalynatab.cpp" />
     <ClCompile Include="../cryptopp/src/keccak.cpp" />
-    <ClCompile Include="../cryptopp/src/keccakc.cpp" />
     <ClCompile Include="../cryptopp/src/lea.cpp" />
     <ClCompile Include="../cryptopp/src/lea_simd.cpp" />
     <ClCompile Include="../cryptopp/src/luc.cpp" />
@@ -313,7 +312,6 @@
     <ClCompile Include="../cryptopp/src/simeck.cpp" />
     <ClCompile Include="../cryptopp/src/simeck_simd.cpp" />
     <ClCompile Include="../cryptopp/src/simon.cpp" />
-    <ClCompile Include="../cryptopp/src/simon64_simd.cpp" />
     <ClCompile Include="../cryptopp/src/simon128_simd.cpp" />
     <ClCompile Include="../cryptopp/src/simple.cpp" />
     <ClCompile Include="../cryptopp/src/skipjack.cpp" />
@@ -322,7 +320,6 @@
     <ClCompile Include="../cryptopp/src/sm4_simd.cpp" />
     <ClCompile Include="../cryptopp/src/sosemanuk.cpp" />
     <ClCompile Include="../cryptopp/src/speck.cpp" />
-    <ClCompile Include="../cryptopp/src/speck64_simd.cpp" />
     <ClCompile Include="../cryptopp/src/speck128_simd.cpp" />
     <ClCompile Include="../cryptopp/src/square.cpp" />
     <ClCompile Include="../cryptopp/src/squaretb.cpp" />
@@ -345,6 +342,8 @@
     <ClCompile Include="../cryptopp/src/zdeflate.cpp" />
     <ClCompile Include="../cryptopp/src/zinflate.cpp" />
     <ClCompile Include="../cryptopp/src/zlib.cpp" />
+    <ClCompile Include="..\cryptopp\src\keccak_core.cpp" />
+    <ClCompile Include="..\cryptopp\src\keccak_simd.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="adhoc.cpp.proto">
@@ -458,7 +457,6 @@
     <ClInclude Include="../cryptopp/src/iterhash.h" />
     <ClInclude Include="../cryptopp/src/kalyna.h" />
     <ClInclude Include="../cryptopp/src/keccak.h" />
-    <ClInclude Include="../cryptopp/src/keccakc.h" />
     <ClInclude Include="../cryptopp/src/lubyrack.h" />
     <ClInclude Include="../cryptopp/src/lea.h" />
     <ClInclude Include="../cryptopp/src/luc.h" />

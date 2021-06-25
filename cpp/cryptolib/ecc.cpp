@@ -133,7 +133,7 @@ void PrintPublicKey(const CryptoPP::DL_PublicKey_EC<ECP>& key, std::ostream& out
     out << "  y: " << std::hex << point.y << endl;
 }
 
-bool ECCCrypto::genKey(const std::string& privateKeyFile, const std::string& publicKeyFile){
+bool ECCCrypto::genKeyFile(const std::string& privateKeyFile, const std::string& publicKeyFile){
     // CryptoPP::ECIES < ECC_ALGORITHM >::PrivateKey privateKey;    
     //     CryptoPP::ECIES < ECC_ALGORITHM >::PublicKey publicKey;    
     
@@ -159,7 +159,7 @@ bool ECCCrypto::genKey(const std::string& privateKeyFile, const std::string& pub
     UpdateDecryptor();
     return true;
 }
-bool ECCCrypto::loadKey(const std::string &privateKeyFile, const std::string &publicKeyFile)
+bool ECCCrypto::loadKeyFile(const std::string &privateKeyFile, const std::string &publicKeyFile)
 {
   
   if(privateKeyFile != ""){
@@ -175,6 +175,62 @@ bool ECCCrypto::loadKey(const std::string &privateKeyFile, const std::string &pu
   if(privateKeyFile != "")  
     UpdateDecryptor();
   return true;
+}
+
+bool ECCCrypto::genKeyText(std::string& privateKeyText, std::string& publicKeyText) {
+    // CryptoPP::ECIES < ECC_ALGORITHM >::PrivateKey privateKey;    
+    //     CryptoPP::ECIES < ECC_ALGORITHM >::PublicKey publicKey;    
+
+
+    // Key Generation
+    _privateKey.Initialize(_rng, ECC_CURVE);
+    _privateKey.MakePublicKey(_publicKey);
+
+    // Key Validation
+    if (!_privateKey.Validate(_rng, 3))
+    {
+        return false;//throw runtime_error ("Private key validation failed");      
+    }
+
+    if (!_publicKey.Validate(_rng, 3))
+    {
+        return false;//throw runtime_error ("Public key validation failed");      
+    }
+    // Private and Public keys    
+    {
+        CryptoPP::ByteQueue queue;
+        _privateKey.Save(queue);
+        queue.CopyTo(CryptoPP::Base64Encoder(new StringSink(privateKeyText)));
+    }
+    {
+        CryptoPP::ByteQueue queue;
+        _publicKey.Save(queue);
+        queue.CopyTo(CryptoPP::Base64Encoder(new StringSink(publicKeyText)));
+    }
+
+    UpdateEncryptor();
+    UpdateDecryptor();
+    return true;
+}
+
+bool ECCCrypto::loadKeyText(const std::string& privateKeyText, const std::string& publicKeyText)
+{
+
+    if (privateKeyText != "") {
+        CryptoPP::ByteQueue queue;        
+        StringSource ss(privateKeyText, true, new CryptoPP::Base64Decoder(&queue));
+        _privateKey.Load(queue);
+    }
+    if (publicKeyText != "") {    
+        CryptoPP::ByteQueue queue;
+        StringSource ss(publicKeyText, true, new CryptoPP::Base64Decoder(&queue));
+        _publicKey.Load(queue);
+    }
+    if (publicKeyText != "")
+        UpdateEncryptor();
+    if (privateKeyText != "")
+        UpdateDecryptor();
+    return true;
 }
 
 bool ECCCrypto::encrypt(const byte* message, int length, byte*& newmessage, int& newlength)

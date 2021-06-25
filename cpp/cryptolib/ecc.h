@@ -62,8 +62,10 @@ using CryptoPP::SHA1;
 
 class ECCCrypto : public CryptoClass{
 public:
-  virtual bool genKey(const std::string& privateKeyFile, const std::string& publicKeyFile);
-  virtual bool loadKey(const std::string& privateKeyFile, const std::string& publicKeyFile);
+  virtual bool genKeyFile(const std::string& privateKeyFile, const std::string& publicKeyFile);
+  virtual bool loadKeyFile(const std::string& privateKeyFile, const std::string& publicKeyFile);
+  virtual bool genKeyText(std::string& privateKeyFile, std::string& publicKeyFile);
+  virtual bool loadKeyText(const std::string& privateKeyFile, const std::string& publicKeyFile);
   virtual bool encrypt(const byte* message, int length, byte*& newmessage, int& newlength);
   virtual bool decrypt(const byte* message, int length, byte*& newmessage, int& newlength);
   virtual int getCryptBlockSize(int plainSize);

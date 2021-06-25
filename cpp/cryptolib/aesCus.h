@@ -10,15 +10,16 @@ using CryptoPP::byte;
 
 class AESCrypto : public CryptoClass{
 public:
-  virtual bool genKey(const std::string& encryptKey, const std::string& iv);
-  virtual bool loadKey(const std::string& encryptKey, const std::string& iv);
+  virtual bool genKeyFile(const std::string& encryptKey, const std::string& iv);
+  virtual bool loadKeyFile(const std::string& encryptKey, const std::string& iv);
+  virtual bool genKeyText(std::string& encryptKey, std::string& iv);
+  virtual bool loadKeyText(const std::string& encryptKey, const std::string& iv);
   virtual bool encrypt(const byte* message, int length, byte*& newmessage, int& newlength);
   virtual bool decrypt(const byte* message, int length, byte*& newmessage, int& newlength);  
   virtual int getCryptBlockSize(int plainSize);
 private:
-	byte _encryptKey[AES::DEFAULT_KEYLENGTH];
-	byte _iv[AES::BLOCKSIZE];
-	CryptoPP::AutoSeededRandomPool _rng;
+    std::unique_ptr<CryptoPP::SecByteBlock> _encryptKey;// (AES::DEFAULT_KEYLENGTH);
+    std::unique_ptr<CryptoPP::SecByteBlock> _iv;// (AES::BLOCKSIZE);
 };
 
 #endif
