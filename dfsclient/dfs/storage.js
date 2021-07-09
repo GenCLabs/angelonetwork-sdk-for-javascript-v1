@@ -80,19 +80,20 @@ exports.writeUserList = function(userlist){
 exports.writeMessageList = function(messagelist){
   writeObj(path.join(currentUserPath, "messagelist.json"), messagelist); 
 }
-exports.copyKey = function(keyFile, keyObj){
-  copyFile(keyFile + ".pub", path.join(currentUserKeyPath, "main.pub"));
-  copyFile(keyFile + ".key", path.join(currentUserKeyPath, "main.key"));
+exports.copyKey = function(keyObj){
+  //copyFile(keyFile + ".pub", path.join(currentUserKeyPath, "main.pub"));
+  //copyFile(keyFile + ".key", path.join(currentUserKeyPath, "main.key"));
   writeObj(path.join(currentUserKeyPath, "mainkey.key"), keyObj);
 }
 exports.getMyMainKey = function(){
   return JSON.parse(fs.readFileSync(path.join(currentUserKeyPath, "mainkey.key")));
 }
 
-exports.deleteKey = function(keyFile){
-  deleteFile(keyFile + ".pub");
-  deleteFile(keyFile + ".key");
-}
+// exports.deleteKey = function(keyFile){
+//   deleteFile(keyFile + ".pub");
+//   deleteFile(keyFile + ".key");
+// }
+
 exports.addFile = function(metadata){
   writeObj(path.join(currentUserFilePath, metadata.id + ".json"), metadata);
 }

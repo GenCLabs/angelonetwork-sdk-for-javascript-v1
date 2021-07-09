@@ -15,22 +15,22 @@ exports.initialize = function(){
   storage.initializeFolder();
 }
 exports.register = function(email, password, callback){
-  var keyfile = storage.getTempFile(uuidv4());
-  crypto.genkey(keyfile, (finished)=>{
-    crypto.encode_file(keyfile + ".key",(keystr)=>{
-      crypto.encode_file(keyfile + ".pub", (textkey)=>{
+  //var keyfile = storage.getTempFile(uuidv4());
+  crypto.genkey((keypair)=>{
+    //crypto.encode_file(keyfile + ".key",(keystr)=>{
+      //crypto.encode_file(keyfile + ".pub", (textkey)=>{
         auth.register(email, password, textkey, (body)=>{
           //console.log(body);
           //console.log(body.user._id);
           currentUser = body.user;
-          var key = { keytype:crypto.getEncryptionType(), key:keystr, pubkey:textkey};
+          var key = { keytype:keypair.keyType, key:keypair.privateKey, pubkey:keypair.publicKey};
           storage.createUserDir(body.user);
           storage.copyKey(keyfile, key);
-          storage.deleteKey(keyfile);
+          //storage.deleteKey(keyfile);
           createRootFolder(()=>{callback(body)});
         })
-      });
-    });
+      //});
+    //});
   });
 }
 exports.login = function(email, password, callback){
@@ -119,7 +119,7 @@ var uploadFile = exports.uploadFile=function(file, callback){
   var keyname = uuidv4();
   var keyfile = storage.getKeyFile(keyname);
   console.log("Gen key");
-  crypto.genkey(keyfile, (finished)=>{
+  crypto.genkey(keyfile, (keypair)=>{
     console.log("Gen temp file to encrypt");
     var encrypt_file_temp = storage.getTempFile(uuidv4());
     crypto.encrypt_file(file, encrypt_file_temp, keyfile + ".pub", ()=>{

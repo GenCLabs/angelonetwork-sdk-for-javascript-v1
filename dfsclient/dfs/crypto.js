@@ -18,11 +18,13 @@ exports.getEncryptionType = function(){
 }
 
 exports.genkey = function(filename, callback){
-  var child = execFile(program, ["genkey", crypttype, filename + ".key", filename + ".pub"],
+  var child = execFile(program, ["genkeyText", crypttype],
     function (error, stdout, stderr) {
       //console.log(stdout);
       //var primes = stdout.split("\n").slice(0, -3).map(function (line) {return parseInt(line);});
-      callback(true);
+      var text = stdout.replace(/(?:\r\n|\r|\n)/g, '');
+      content=JSON.parse(text);
+      callback(content);
     }
   );
 }
