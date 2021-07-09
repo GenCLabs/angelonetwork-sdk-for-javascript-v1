@@ -200,12 +200,14 @@ bool ECCCrypto::genKeyText(std::string& privateKeyText, std::string& publicKeyTe
     {
         CryptoPP::ByteQueue queue;
         _privateKey.Save(queue);
-        queue.CopyTo(CryptoPP::Base64Encoder(new StringSink(privateKeyText)));
+        CryptoPP::Base64Encoder enc(new StringSink(privateKeyText));
+        queue.CopyTo(enc);
     }
     {
         CryptoPP::ByteQueue queue;
         _publicKey.Save(queue);
-        queue.CopyTo(CryptoPP::Base64Encoder(new StringSink(publicKeyText)));
+        CryptoPP::Base64Encoder enc(new StringSink(publicKeyText));
+        queue.CopyTo(enc);
     }
 
     UpdateEncryptor();
