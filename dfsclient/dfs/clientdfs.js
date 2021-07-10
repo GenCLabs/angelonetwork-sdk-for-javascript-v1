@@ -19,13 +19,13 @@ exports.register = function(email, password, callback){
   crypto.genkey((keypair)=>{
     //crypto.encode_file(keyfile + ".key",(keystr)=>{
       //crypto.encode_file(keyfile + ".pub", (textkey)=>{
-        auth.register(email, password, textkey, (body)=>{
+        auth.register(email, password, keypair.publicKey, (body)=>{
           //console.log(body);
           //console.log(body.user._id);
           currentUser = body.user;
           var key = { keytype:keypair.keyType, key:keypair.privateKey, pubkey:keypair.publicKey};
           storage.createUserDir(body.user);
-          storage.copyKey(keyfile, key);
+          storage.copyKey(key);
           //storage.deleteKey(keyfile);
           createRootFolder(()=>{callback(body)});
         })
@@ -116,45 +116,48 @@ var encodeFile = function(binaryFile, callback){
 }
 
 var uploadFile = exports.uploadFile=function(file, callback){
-  var keyname = uuidv4();
-  var keyfile = storage.getKeyFile(keyname);
+  //var keyname = uuidv4();
+  //var keyfile = storage.getKeyFile(keyname);
   console.log("Gen key");
-  crypto.genkey(keyfile, (keypair)=>{
+  crypto.genkey((keypair)=>{
     console.log("Gen temp file to encrypt");
     var encrypt_file_temp = storage.getTempFile(uuidv4());
-    crypto.encrypt_file(file, encrypt_file_temp, keyfile + ".pub", ()=>{
-      console.log("Encrypt file ok -> upload");
+    console.log("encrypted file " + encrypt_file_temp);
+    crypto.encrypt_file(file, encrypt_file_temp, keypair.privateKey, 
+      keypair.publicKey, ()=>{
+      console.log("Encrypt file ok -> upload file " + encrypt_file_temp);
       dfs.upload(encrypt_file_temp, (file_id)=>{
         console.log("Upload ok -> encode key");
-        crypto.encode_file(keyfile + ".key",(keystr)=>{
-          crypto.encode_file(keyfile + ".pub", (pubkeystr)=>{
+        //crypto.encode_file(keyfile + ".key",(keystr)=>{
+          //crypto.encode_file(keyfile + ".pub", (pubkeystr)=>{
             //console.log("keystr" + keystr);
             //console.log("pubkeystr" + pubkeystr);
             console.log("encode key ok -> clear");
-            var metadata={ type: "filekey", id : file_id, filename : path.basename(file), keytype:crypto.getEncryptionType(), key : keystr, pubkey : pubkeystr};
+            var metadata={ type: "filekey", id : file_id, filename : path.basename(file), keytype:crypto.getEncryptionType(), 
+            key : keypair.privateKey, pubkey : keypair.publicKey};
             console.log("Upload key file " + metadata);
             uploadKey(metadata,()=>{
               storage.addFile(metadata);
               storage.deleteFile(encrypt_file_temp);
-              storage.deleteKey(keyfile);
+              //storage.deleteKey(keyfile);
               console.log("callback upload ok");
               callback(file_id);
             });
-          })
-        })        
+          //})
+        //})        
       });
     });
   });
 }
 var updateFile = exports.updateFile=function(id, newFilePath, callback){
-  var keyfile = storage.getTempFile(uuidv4()) + ".pub";
+  //var keyfile = storage.getTempFile(uuidv4()) + ".pub";
   //crypto.genkey(keyfile, (finished)=>{
   var file = storage.readFile(id);
-  console.log("write pubkey to file: " + keyfile);
-  crypto.decode_file(file.pubkey, keyfile , ()=>{
-    console.log("decode key ok -> encrypt");
+  //console.log("write pubkey to file: " + keyfile);
+  //crypto.decode_file(file.pubkey, keyfile , ()=>{
+    //console.log("decode key ok -> encrypt");
     var encrypt_file_temp = storage.getTempFile(uuidv4());
-    crypto.encrypt_file(newFilePath, encrypt_file_temp, keyfile, ()=>{
+    crypto.encrypt_file(newFilePath, encrypt_file_temp, "", file.pubkey, ()=>{
       console.log("encrypt ok -> update file " + id);
       dfs.update(id, encrypt_file_temp, (body)=>{
         //crypto.encode_file(keyfile + ".key",(keystr)=>{
@@ -165,14 +168,14 @@ var updateFile = exports.updateFile=function(id, newFilePath, callback){
             //storage.addFile(metadata);
             console.log("update ok -> clear")
             storage.deleteFile(encrypt_file_temp);
-            storage.deleteFile(keyfile);
+            //storage.deleteFile(keyfile);
             console.log("callback update ok");
             callback(body);
           //})
         //})        
       });
     });
-  });
+  //});
 }
 var saveFolder = exports.saveFolder = function(folder, callback){
   var tempfile = storage.getTempFile(uuidv4());
@@ -316,19 +319,19 @@ exports.shareFile=function(fileLinker, receiver, callback){
 var shareObject = function(obj, receiverId, receiverPubkey, callback){
   
   var pubkey = receiverPubkey;
-  var keyfile = storage.getTempFile(uuidv4()+".pub");
-  crypto.decode_file(pubkey, keyfile, ()=>{
+  //var keyfile = storage.getTempFile(uuidv4()+".pub");
+  //crypto.decode_file(pubkey, keyfile, ()=>{
     console.log("Share " + obj + " from " + receiverId + " pub key:" + receiverPubkey);
     var filestr = JSON.stringify(obj);
-    crypto.encrypt_text(filestr, keyfile, (result, encryptedText)=>{
+    crypto.encrypt_text(filestr, "", pubkey, (result, encryptedText)=>{
       console.log("Encrypt object ok");
       auth.sendMessage( receiverId, encryptedText,()=>{
         console.log("Send message object finish ");
-        storage.deleteFile(keyfile);
+        //storage.deleteFile(keyfile);
         callback();
       });
     });
-  });
+  //});
 }
 
 function sleep(ms){
@@ -417,12 +420,13 @@ exports.reloadMessages = function(callback){
         try{
           var privateKey = storage.getMyMainKey().key;
         console.log("private key:" + privateKey)
-        var currentUserKeyFile = storage.getTempFile(uuidv4()+".key");
-        console.log("private key 2:" + currentUserKeyFile);
-        crypto.decode_file(privateKey, currentUserKeyFile, ()=>{
-          crypto.decrypt_text(msg.content, currentUserKeyFile, (decrypt_result, plain_text)=>{
-            if(plain_text.trim() != ""){
-              try{
+        //var currentUserKeyFile = storage.getTempFile(uuidv4()+".key");
+        //console.log("private key 2:" + currentUserKeyFile);
+        //crypto.decode_file(privateKey, currentUserKeyFile, ()=>{
+          crypto.decrypt_text(msg.content, privateKey, "", (decrypt_result, plain_text)=>{
+            try{
+              if(plain_text.trim() != ""){
+              
                 console.log("plain_message:" + plain_text);
               
                 var sharingFile = JSON.parse(plain_text);
@@ -443,12 +447,13 @@ exports.reloadMessages = function(callback){
                   folder.addLinkerToFolder(sharingFile.link, sharedFolder);
                   storage.addFile(sharingFile);
                 }
-              }catch(err){
-                console.log(err);
+              
               }
+            }catch(err){
+              console.log(err);
             }
           });
-        });
+        //});
       }catch(err){
         console.log(err);
       }
@@ -467,14 +472,14 @@ exports.downloadSharingFile = function(sharingFileLinker, filename, callback){
     var tempFile = storage.getTempFile(uuidv4());
     dfs.download(sharingFile.id, tempFile, (result)=>{
       //console.log("dfs download ok to " + tempFile);
-      var tempKey = storage.getTempFile(uuidv4());
-      crypto.decode_file(sharingFile.key, tempKey, ()=>{
+      //var tempKey = storage.getTempFile(uuidv4());
+      //crypto.decode_file(sharingFile.key, tempKey, ()=>{
         //console.log("crypto decode key to " + tempKey);
-        crypto.decrypt_file(tempFile, filename, tempKey, ()=>{
+        crypto.decrypt_file(tempFile, filename, sharingFile.key, "", ()=>{
           //console.log("crypto decrypt file to " + filename);
           callback(filename);
         });
-      });
+      //});
     });
   }
 }
@@ -483,14 +488,14 @@ var downloadFile = exports.downloadFile = function(fileInfo, filename, callback)
   var tempFile = storage.getTempFile(uuidv4());
   dfs.download(fileInfo.id, tempFile, (result)=>{
     //console.log("dfs download ok to " + tempFile);
-    var tempKey = storage.getTempFile(uuidv4());
-    crypto.decode_file(fileInfo.key, tempKey, ()=>{
+    //var tempKey = storage.getTempFile(uuidv4());
+    //crypto.decode_file(fileInfo.key, tempKey, ()=>{
       //console.log("crypto decode key to " + tempKey);
-      crypto.decrypt_file(tempFile, filename, tempKey, ()=>{
+      crypto.decrypt_file(tempFile, filename, fileInfo.key, "", ()=>{
         //console.log("crypto decrypt file to " + filename);
         callback(filename);
       });
-    });
+    //});
   });
 }
 

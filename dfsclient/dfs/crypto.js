@@ -17,10 +17,10 @@ exports.getEncryptionType = function(){
   return crypttype;
 }
 
-exports.genkey = function(filename, callback){
+exports.genkey = function(callback){
   var child = execFile(program, ["genkeyText", crypttype],
     function (error, stdout, stderr) {
-      //console.log(stdout);
+      console.log(stdout);
       //var primes = stdout.split("\n").slice(0, -3).map(function (line) {return parseInt(line);});
       var text = stdout.replace(/(?:\r\n|\r|\n)/g, '');
       content=JSON.parse(text);
@@ -28,27 +28,35 @@ exports.genkey = function(filename, callback){
     }
   );
 }
-exports.encrypt_text = function(text, keyfile, callback){
-  var child = execFile(program, ["encrypt", crypttype, "text", text, keyfile ],
+exports.encrypt_text = function(text, privateKeyFile, publicKeyFile, callback){
+  var child = execFile(program, ["textkeyencrypt", crypttype, "text", text, privateKeyFile, publicKeyFile ],
     function (error, stdout, stderr) {
       //console.log(stdout);
-      
       var text = stdout.replace(/(?:\r\n|\r|\n)/g, '');
+      
       callback(true, text);
+      
     }
   );
 }
-exports.decrypt_text = function(text, keyfile, callback){
-  var child = execFile(program, ["decrypt", crypttype, "text", text, keyfile ],
+
+exports.decrypt_text = function(text, privateKeyFile, publicKeyFile, callback){
+  params = ["textkeydecrypt", crypttype, "text", text, privateKeyFile, publicKeyFile ];
+  console.log(params)
+  var child = execFile(program, params,
     function (error, stdout, stderr) {
       //console.log(stdout);
       
-      callback(true, stdout);
+        callback(true, stdout);
+      
     }
   );
 }
-exports.encrypt_file = function(fileinput, fileoutput, keyfile, callback){
-  var child = execFile(program, ["encrypt", crypttype, "file", fileinput, fileoutput, keyfile],
+exports.encrypt_file = function(fileinput, fileoutput, privateKeyFile, publicKeyFile, callback){
+  var params = ["textkeyencrypt", crypttype, "file", fileinput,
+  fileoutput, privateKeyFile, publicKeyFile];
+  console.log(params);
+  var child = execFile(program, params,
     function (error, stdout, stderr) {
       //console.log(stdout);
       
@@ -56,8 +64,9 @@ exports.encrypt_file = function(fileinput, fileoutput, keyfile, callback){
     }
   );
 }
-exports.decrypt_file = function(fileinput, fileoutput, keyfile, callback){
-  var child = execFile(program, ["decrypt", crypttype, "file", fileinput, fileoutput, keyfile],
+exports.decrypt_file = function(fileinput, fileoutput, privateKeyFile, publicKeyFile, callback){
+  var child = execFile(program, ["textkeydecrypt", crypttype, "file", fileinput,
+   fileoutput, privateKeyFile, publicKeyFile],
     function (error, stdout, stderr) {
       //console.log(stdout);
       

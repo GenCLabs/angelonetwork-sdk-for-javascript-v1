@@ -58,6 +58,8 @@ using CryptoPP::OID;
 using CryptoPP::PrivateKey;
 using CryptoPP::PublicKey;
 
+#include "cryptocommon.h"
+
 void SavePrivateKey(const PrivateKey& key, const string& file)
 {
     FileSink sink(file.c_str());
@@ -197,19 +199,42 @@ bool ECCCrypto::genKeyText(std::string& privateKeyText, std::string& publicKeyTe
         return false;//throw runtime_error ("Public key validation failed");      
     }
     // Private and Public keys    
-    {
-        CryptoPP::ByteQueue queue;
-        _privateKey.Save(queue);
-        CryptoPP::Base64Encoder enc(new StringSink(privateKeyText));
-        queue.CopyTo(enc);
-    }
-    {
-        CryptoPP::ByteQueue queue;
-        _publicKey.Save(queue);
-        CryptoPP::Base64Encoder enc(new StringSink(publicKeyText));
-        queue.CopyTo(enc);
-    }
+    // {
+    //     CryptoPP::ByteQueue queue;
+    //     _privateKey.Save(queue);
+    //     CryptoPP::Base64Encoder enc(new StringSink(privateKeyText));
+    //     queue.CopyTo(enc);
+    // }
+    // {
+    //     CryptoPP::ByteQueue queue;
+    //     _publicKey.Save(queue);
+    //     CryptoPP::Base64Encoder enc(new StringSink(publicKeyText));
+    //     queue.CopyTo(enc);
+    // }
+    // std::cout << "private key: " << privateKeyText << std::endl;
+    // std::cout << "public key: " << publicKeyText << std::endl;
 
+    { CryptoPP::ByteQueue queue;
+        _publicKey.Save(queue);
+        CryptoPP::lword size = queue.TotalBytesRetrievable();
+
+        std::unique_ptr<byte> buf(new byte[size]);
+        queue.Get(buf.get(), size);
+        	publicKeyText = EncodeBase64(buf.get(), size);
+          //std::cout << "public key" << publicKeyText << std::endl;
+          
+        }
+
+    { CryptoPP::ByteQueue queue;
+        _privateKey.Save(queue);
+        CryptoPP::lword size = queue.TotalBytesRetrievable();
+
+        std::unique_ptr<byte> buf(new byte[size]);
+        queue.Get(buf.get(), size);
+        	privateKeyText = EncodeBase64(buf.get(), size);
+          //std::cout << "public key" << privateKeyText << std::endl;
+        }
+    
     UpdateEncryptor();
     UpdateDecryptor();
     return true;
@@ -217,21 +242,47 @@ bool ECCCrypto::genKeyText(std::string& privateKeyText, std::string& publicKeyTe
 
 bool ECCCrypto::loadKeyText(const std::string& privateKeyText, const std::string& publicKeyText)
 {
-
+    //std::cout << "Load key text " << std::endl;
     if (privateKeyText != "") {
-        CryptoPP::ByteQueue queue;        
-        StringSource ss(privateKeyText, true, new CryptoPP::Base64Decoder(&queue));
-        _privateKey.Load(queue);
+
+    //std::cout << "Load key text " << privateKeyText << std::endl;
+        // CryptoPP::ByteQueue queue;        
+        // StringSource ss(privateKeyText, true, new CryptoPP::Base64Decoder(&queue));
+        // _privateKey.Load(queue);
+
+        byte* key;
+	int length;
+	DecodeBase64(privateKeyText, key, length);
+  //std::cout << "len:" << length << std::endl;
+  CryptoPP::ByteQueue queue;
+	queue.Put(key, length);
+  _privateKey.Load(queue);
+        //std::cout << "Load private key text ok" << std::endl;
     }
     if (publicKeyText != "") {    
-        CryptoPP::ByteQueue queue;
-        StringSource ss(publicKeyText, true, new CryptoPP::Base64Decoder(&queue));
-        _publicKey.Load(queue);
+
+    //std::cout << "Load key text " << publicKeyText<< std::endl;
+        // CryptoPP::ByteQueue queue;
+        // StringSource ss(publicKeyText, true, new CryptoPP::Base64Decoder(&queue));
+        // _publicKey.Load(queue);
+
+
+        byte* key;
+	int length;
+	DecodeBase64(publicKeyText, key, length);
+  //std::cout << "len:" << length << std::endl;
+  CryptoPP::ByteQueue queue;
+	queue.Put(key, length);
+  _publicKey.Load(queue);
+
+        //std::cout << "Load public key text ok" << std::endl;
     }
     if (publicKeyText != "")
         UpdateEncryptor();
     if (privateKeyText != "")
         UpdateDecryptor();
+    
+        //std::cout << "Load all key text ok" << std::endl;
     return true;
 }
 

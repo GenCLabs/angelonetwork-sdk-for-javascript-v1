@@ -72,7 +72,7 @@ std::string CryptoLib::encryptText(const std::string& message){
   //std::string newText(reinterpret_cast<char*>(newMessage));
   std::string newText=EncodeBase64(newMessage, newLength);
   delete[] newMessage;
-  return "{\"cipher\":\"" + newText + "\"}";;
+  return newText;
 }
 std::string CryptoLib::decryptText(const std::string& message){
   byte* inputData;
@@ -89,7 +89,7 @@ std::string CryptoLib::decryptText(const std::string& message){
   std::string newText(reinterpret_cast<char*>(data));
   delete[] newMessage;
   delete[] inputData;
-  return "{\"plain\":\"" + newText + "\"}";
+  return newText;
 }
 
 inline bool EndOfFile(const FileSource& file)
