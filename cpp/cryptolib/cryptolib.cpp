@@ -66,12 +66,18 @@ bool CryptoLib::loadKeyText(const std::string& privateKeyFile, const std::string
 
 std::string CryptoLib::encryptText(const std::string& message){
   int length = message.length();
-  byte* newMessage;
+  std::vector<byte> newMessage;
+  std::vector<byte> inMessage(length);
+  std::copy(&message[0], (&message[0])+length, &inMessage[0]);
   int newLength;
-  _crypto->encrypt(reinterpret_cast<const byte*>(message.data()), length, newMessage, newLength);
+  _crypto->encrypt(inMessage, length, newMessage, newLength);
   //std::string newText(reinterpret_cast<char*>(newMessage));
-  std::string newText=EncodeBase64(newMessage, newLength);
-  delete[] newMessage;
+  std::string newText=EncodeBase64(&newMessage[0], newLength);
+    //std::cout << "delete 1 ok" << std::endl;
+
+  //delete[] newMessage;
+    //std::cout << "delete 1 ok 2" << std::endl;
+  //std::cout << newText << std::endl;
   return newText;
 }
 std::string CryptoLib::decryptText(const std::string& message){
@@ -79,16 +85,22 @@ std::string CryptoLib::decryptText(const std::string& message){
   int length;
   DecodeBase64(message, inputData, length);
   //int length = message.length() + 1;
-  byte* newMessage;
+  std::vector<byte> newMessage;
+  std::vector<byte> inData(length);
+  std::copy(inputData, inputData + length, &inData[0]);
   int newLength;
   //_crypto->decrypt(reinterpret_cast<const byte*>(message.data()), length, newMessage, newLength);
-  _crypto->decrypt(inputData, length, newMessage, newLength);
+  _crypto->decrypt(inData, length, newMessage, newLength);
   byte* data = new byte[newLength + 1];
   data[newLength] = 0;
-  std::copy(newMessage, newMessage + newLength, data);
+  std::copy(&newMessage[0], (&newMessage[0]) + newLength, data);
   std::string newText(reinterpret_cast<char*>(data));
-  delete[] newMessage;
+  // /delete[] newMessage;
+  std::cout << "delete 1 ok" << std::endl;
+
   delete[] inputData;
+  std::cout << "delete 2 ok" << std::endl;
+
   return newText;
 }
 
@@ -120,13 +132,13 @@ void CryptoLib::encryptFile(const std::string& inputFile, const std::string& out
   {
     ifs.Pump(BLOCK_SIZE);
     //filter.Flush(false);
-    byte* newMessage; int newLength;
-    _crypto->encrypt((byte*)buffer.data(), buffer.size(), newMessage, newLength);
+    std::vector<byte> newMessage; int newLength;
+    _crypto->encrypt(buffer, buffer.size(), newMessage, newLength);
     buffer.clear();
 
-    ofs.Put(newMessage, newLength);
+    ofs.Put(&newMessage[0], newLength);
     processed += BLOCK_SIZE;
-    delete []newMessage;
+    //delete []newMessage;
     //if (processed % (1024*1024*10) == 0)
     //  std::cout << "Processed: " << meter.GetTotalBytes() << std::endl;
   }
@@ -156,13 +168,13 @@ void CryptoLib::decryptFile(const std::string& inputFile, const std::string& out
   {
     ifs.Pump(crypt_size);
     //filter.Flush(false);
-    byte* newMessage; int newLength;
-    _crypto->decrypt((byte*)buffer.data(), buffer.size(), newMessage, newLength);
+    std::vector<byte> newMessage; int newLength;
+    _crypto->decrypt(buffer, buffer.size(), newMessage, newLength);
     buffer.clear();
 
-    ofs.Put(newMessage, newLength);
+    ofs.Put(&newMessage[0], newLength);
     processed += crypt_size;
-    delete []newMessage;
+    //delete []newMessage;
     //if (processed % (1024*1024*10) == 0)
     //  std::cout << "Processed: " << meter.GetTotalBytes() << std::endl;
   }

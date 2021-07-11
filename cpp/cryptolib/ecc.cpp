@@ -286,7 +286,7 @@ bool ECCCrypto::loadKeyText(const std::string& privateKeyText, const std::string
     return true;
 }
 
-bool ECCCrypto::encrypt(const byte* message, int length, byte*& newmessage, int& newlength)
+bool ECCCrypto::encrypt(const std::vector<byte>& message, int length, std::vector<byte>& newmessage, int& newlength)
 {
   int plainTextLength = length;// + 1;
   size_t cipherTextLength = _Encryptor.CiphertextLength (plainTextLength);
@@ -302,23 +302,23 @@ bool ECCCrypto::encrypt(const byte* message, int length, byte*& newmessage, int&
   // cout << cipherTextLength << endl;
 
   // Encryption buffer
-  byte* cipherText = new byte[cipherTextLength];
-  if (NULL == cipherText)
+  std::vector<byte> cipherText(cipherTextLength);
+  //if (NULL == cipherText)
   {        
     //throw runtime_error ("Cipher text allocation failure");      
   }
     
-  memset (cipherText, 0xFB, cipherTextLength);
+  memset (&cipherText[0], 0xFB, cipherTextLength);
 
   // Encryption
   //Encryptor.Encrypt(_rng, reinterpret_cast < const byte * > (message.data ()), plainTextLength, cipherText); 
-  _Encryptor.Encrypt(_rng, message, plainTextLength, cipherText);
+  _Encryptor.Encrypt(_rng, &message[0], plainTextLength, &cipherText[0]);
   newmessage = cipherText;
   newlength = cipherTextLength;
   return true;
 }
 
-bool ECCCrypto::decrypt(const byte* message, int length, byte*& newmessage, int& newlength){
+bool ECCCrypto::decrypt(const std::vector<byte>& message, int length, std::vector<byte>& newmessage, int& newlength){
   //_Decryptor(_privateKey);
     size_t cipherTextLength = length;// + 1;
     // Size
@@ -331,16 +331,16 @@ bool ECCCrypto::decrypt(const byte* message, int length, byte*& newmessage, int&
     }
 
     // Decryption Buffer
-    byte * recoveredText = new byte[recoveredTextLength];
-    if (NULL == recoveredText)      
-    {        
-      std::cout << ("recoveredText allocation failure") << std::endl;      
-    }    
+    std::vector<byte> recoveredText(recoveredTextLength);
+    // if (NULL == recoveredText)      
+    // {        
+    //   std::cout << ("recoveredText allocation failure") << std::endl;      
+    // }    
 
-    memset (recoveredText, 0xFB, recoveredTextLength);
+    memset (&recoveredText[0], 0xFB, recoveredTextLength);
 
     // Decryption
-    _Decryptor.Decrypt (_rng, message, cipherTextLength, recoveredText);     
+    _Decryptor.Decrypt (_rng, &message[0], cipherTextLength, &recoveredText[0]);     
 
     // cout << "Recovered text: " << recoveredText << endl;
 	// cout << "Recovered text length is " << recoveredTextLength << endl;

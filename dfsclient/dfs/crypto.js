@@ -28,6 +28,27 @@ exports.genkey = function(callback){
     }
   );
 }
+exports.derivekey = function(text, callback){
+  var child = execFile(program, ["derivekey", text],
+    function(error, stdout, stderr){
+      console.log(stdout);
+      var text = stdout.replace(/(?:\r\n|\r|\n)/g, '');
+      content=JSON.parse(text);
+      callback(content);
+    }
+  );
+}
+exports.genSecretKey = function(length) {
+  var result           = '';
+  //var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var charactersLength = characters.length;
+  for ( var i = 0; i < length; i++ ) {
+    result += characters.charAt(Math.floor(Math.random() * 
+    charactersLength));
+  }
+ return result;
+}
 exports.encrypt_text = function(text, privateKeyFile, publicKeyFile, callback){
   var child = execFile(program, ["textkeyencrypt", crypttype, "text", text, privateKeyFile, publicKeyFile ],
     function (error, stdout, stderr) {
@@ -42,6 +63,33 @@ exports.encrypt_text = function(text, privateKeyFile, publicKeyFile, callback){
 
 exports.decrypt_text = function(text, privateKeyFile, publicKeyFile, callback){
   params = ["textkeydecrypt", crypttype, "text", text, privateKeyFile, publicKeyFile ];
+  console.log(params)
+  var child = execFile(program, params,
+    function (error, stdout, stderr) {
+      //console.log(stdout);
+      
+        callback(true, stdout);
+      
+    }
+  );
+}
+
+exports.encrypt_text_aes = function(text, privateKeyFile, publicKeyFile, callback){
+  var params = ["textkeyencrypt", 'aes', "text", text, privateKeyFile, publicKeyFile ];
+  console.log(params);
+  var child = execFile(program, params,
+    function (error, stdout, stderr) {
+      //console.log(stdout);
+      var text = stdout.replace(/(?:\r\n|\r|\n)/g, '');
+      
+      callback(true, text);
+      
+    }
+  );
+}
+
+exports.decrypt_text_aes = function(text, privateKeyFile, publicKeyFile, callback){
+  params = ["textkeydecrypt", 'aes', "text", text, privateKeyFile, publicKeyFile ];
   console.log(params)
   var child = execFile(program, params,
     function (error, stdout, stderr) {

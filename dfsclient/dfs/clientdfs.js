@@ -14,7 +14,7 @@ var currentFolder = {linker : null, info : null};
 exports.initialize = function(){
   storage.initializeFolder();
 }
-exports.register = function(email, password, callback){
+exports.register = function(email, password, secretKey, callback){
   //var keyfile = storage.getTempFile(uuidv4());
   crypto.genkey((keypair)=>{
     //crypto.encode_file(keyfile + ".key",(keystr)=>{
@@ -27,6 +27,9 @@ exports.register = function(email, password, callback){
           storage.createUserDir(body.user);
           storage.copyKey(key);
           //storage.deleteKey(keyfile);
+          uploadMasterKey(secretKey, ()=>{
+            console.log("Upload master key finish");
+          });
           createRootFolder(()=>{callback(body)});
         })
       //});
@@ -503,4 +506,24 @@ exports.syncFileUpload = function(){
   // Upload main key
 
   // Upload key
+}
+
+exports.genSecretKey = function(length){
+  return crypto.genSecretKey(length);
+}
+
+var uploadMasterKey = exports.uploadMasterKey = function(secretKey, callback){
+  content = secretKey;
+  console.log("Gen derive key");
+  crypto.derivekey(content, (keypair)=>{
+    console.log("Derive key pair " + keypair);
+    mainkey = storage.getMyMainKey();
+    var keystr = JSON.stringify(mainkey);
+    var keystrb64 = Buffer.from(keystr).toString('base64');
+    crypto.encrypt_text_aes(keystrb64, keypair.privateKey, keypair.publicKey, (result, cipherText)=>{
+      var masterkeyMsg = { type : "masterkey", cipher : cipherText, version : "1.0"};    
+      console.log(masterkeyMsg);
+      shareObject(masterkeyMsg, currentUser._id, mainkey.pubkey, callback);    
+    });
+  });
 }

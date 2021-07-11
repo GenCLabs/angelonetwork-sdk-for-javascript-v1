@@ -271,11 +271,11 @@ bool AESCrypto::loadKeyText(const std::string& privateKeyText, const std::string
 	return true;
 }
 
-bool AESCrypto::encrypt(const byte* message, int length, byte*& newmessage, int& newlength){
+bool AESCrypto::encrypt(const std::vector<byte>& message, int length, std::vector<byte>& newmessage, int& newlength){
 	//Encrypt
 	try
 	{
-		//cout << "plain text: " << message << endl;
+		//cout << "plain text: " << &message[0] << endl;
 		//cout << "plain length: " << length << endl;
 		//std::cout << Hex(_encryptKey->BytePtr(), _encryptKey->size()) << std::endl;
 		//std::cout << Hex(_iv->BytePtr(), _iv->size()) << std::endl;
@@ -286,7 +286,7 @@ bool AESCrypto::encrypt(const byte* message, int length, byte*& newmessage, int&
 			CBC_Mode< AES >::Encryption e;
 			e.SetKeyWithIV(*_encryptKey, _encryptKey->size(), *_iv);
 
-			CryptoPP::StringSource s(message, length, true,
+			CryptoPP::StringSource s(&message[0], length, true,
 				new StreamTransformationFilter(e,
 					new StringSink(cipher)
 				) // StreamTransformationFilter
@@ -299,11 +299,11 @@ bool AESCrypto::encrypt(const byte* message, int length, byte*& newmessage, int&
 		}
 		//std::cout << "cipher length:" << cipher.size() << std::endl;
 		//std::cout << Hex((const byte*)&cipher[0], cipher.size()) << std::endl;
-		newmessage = new byte[sizeof(cipher)];
+		newmessage.resize(cipher.size());
 		const byte* ptr = (const byte*)&cipher[0];
-		std::copy(ptr, ptr + cipher.size(), newmessage);
+		std::copy(ptr, ptr + cipher.size(), &newmessage[0]);
 		newlength = cipher.size();
-		//std::cout << Hex(ptr, cipher.size()) << std::endl;
+		//std::cout << "cipher hex: " << Hex(ptr, cipher.size()) << std::endl;
 	}
 	catch (const CryptoPP::Exception& e)
 	{
@@ -313,7 +313,7 @@ bool AESCrypto::encrypt(const byte* message, int length, byte*& newmessage, int&
 	return true;
 }
 
-bool AESCrypto::decrypt(const byte* message, int length, byte*& newmessage, int& newlength)
+bool AESCrypto::decrypt(const std::vector<byte>& message, int length, std::vector<byte>& newmessage, int& newlength)
 {
 	try
 	{
@@ -324,15 +324,15 @@ bool AESCrypto::decrypt(const byte* message, int length, byte*& newmessage, int&
 		// The StreamTransformationFilter removes
 		//  padding as required.
 		string recovered;
-		StringSource s(message, length, true,
+		StringSource s(&message[0], length, true,
 			new StreamTransformationFilter(d,
 				new StringSink(recovered)
 			) // StreamTransformationFilter
 		); // StringSource
 
 		//std::cout << recovered << std::endl;
-		newmessage = new byte[recovered.size()];
-		std::copy(recovered.begin(), recovered.end(), newmessage);
+		newmessage.resize(recovered.size());
+		std::copy(recovered.begin(), recovered.end(), &newmessage[0]);
 		newlength = recovered.size();
 		//std::cout << newlength << std::endl;
 	}

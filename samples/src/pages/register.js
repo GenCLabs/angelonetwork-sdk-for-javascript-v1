@@ -17,6 +17,7 @@ import withStyles from '@material-ui/core/styles/withStyles';
 
 import { basename } from 'path';
 
+
 const styles = theme => ({
   main: {
     width: 'auto',
@@ -54,7 +55,8 @@ class Register extends React.Component {
     super(props);
     this.state = {
       name: "",
-      password: ""
+      password: "",
+      secretKey:"",
     };
 
     this.handleInputChange = this.handleInputChange.bind(this);
@@ -88,11 +90,14 @@ class Register extends React.Component {
       const electron = window.require('electron');
       const fs = electron.remote.require('fs');
       const ipcRenderer  = electron.ipcRenderer;
-      alert('login' + document.getElementById('email').value);
-      alert('login' + document.getElementById('password').value); 
+      //alert('login' + document.getElementById('email').value);
+      //alert('login' + document.getElementById('password').value);
+      alert('login' + document.getElementById('secretKey').value); 
       ipcRenderer.send('register',
         [document.getElementById('email').value,
-        document.getElementById('password').value]);
+        document.getElementById('password').value,
+        document.getElementById('secretKey').value
+      ]);
     }
   };
   handleSubmit = (e) => {
@@ -102,7 +107,8 @@ class Register extends React.Component {
   };
   render(){
     const { classes } = this.props;
-
+    const {clientdfs} = require('@genclabs/dfsclient');
+    var secretKey = clientdfs.genSecretKey(10);
     return (
       <main className={classes.main}>
         <CssBaseline />
@@ -126,6 +132,11 @@ class Register extends React.Component {
               control={<Checkbox value="remember" color="primary" />}
               label="Remember me"
             /> */}
+            
+            <Typography component="h1" variant="h5">
+            Secret key (write it down and save it):
+            </Typography>
+            <Input name="secretKey" type="text" id="secretKey" value={secretKey}/>
             <Button
               type="submit"
               fullWidth
