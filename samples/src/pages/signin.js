@@ -51,7 +51,8 @@ class SignIn extends React.Component{
     super(props);
     this.state = {
       name: "",
-      password: ""
+      password: "",
+      requireMasterKey : false
     };
 
     this.handleInputChange = this.handleInputChange.bind(this);
@@ -85,8 +86,13 @@ class SignIn extends React.Component{
         // document.getElementById('load-key-private').innerHTML = `${path}.key`
         //window.close()
         this.props.history.push('/main');
+        
+      });
+      ipcRenderer.on('login-masterKey', (event, path)=>{
+        
+        this.setState({requireMasterKey: true});
 
-      })
+      });
     }
   }
   handleInputChange(event) {
@@ -119,7 +125,17 @@ class SignIn extends React.Component{
   };
   render(){
     const { classes } = this.props;
-
+    const requireMasterKey = this.state.requireMasterKey;
+    let secretKey;
+    if (requireMasterKey) {
+      secretKey = <FormControl margin="normal" required fullWidth>
+      <InputLabel htmlFor="email">Secret key</InputLabel>
+      <Input id="secretKey" name="secretKey" autoComplete="secretKey" autoFocus />
+    </FormControl>;
+    } else {
+      secretKey = <FormControl margin="normal" required fullWidth>
+    </FormControl>;;
+    }
     return (
       <main className={classes.main}>
         <CssBaseline />
@@ -139,10 +155,7 @@ class SignIn extends React.Component{
               <InputLabel htmlFor="password">Password</InputLabel>
               <Input name="password" type="password"  id="password" autoComplete="current-password"  />
             </FormControl>
-            {/* <FormControlLabel
-              control={<Checkbox value="remember" color="primary" />}
-              label="Remember me"
-            /> */}
+            {secretKey}
             <Button
               type="submit"
               fullWidth

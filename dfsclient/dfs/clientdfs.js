@@ -42,8 +42,9 @@ exports.login = function(email, password, callback){
     currentUser = body.user;
     storage.createUserDir(body.user);
     createRootFolder(()=>{
-      callback(body);
-    })    
+      var key = storage.getMyMainKey();
+      callback(body, key != null);
+    })
   });  
 }
 exports.getCurrentUser = function(){
@@ -437,7 +438,10 @@ exports.reloadMessages = function(callback){
                   if(sharingFile.type == "filekey"){
                     storage.addFile(sharingFile);// sharing file as key
                   }
-                  else{
+                  else if(sharingFile.type == "masterkey"){
+                    console.log("Saving master key");
+                    storage.writeMainKeyCipher(sharingFile);
+                  }else{
                     //sharingFile.type == "folder"){
                     // folder handler
                     folder.addLinkerToFolder(sharingFile.link, sharedFolder);

@@ -96,10 +96,10 @@ std::string CryptoLib::decryptText(const std::string& message){
   std::copy(&newMessage[0], (&newMessage[0]) + newLength, data);
   std::string newText(reinterpret_cast<char*>(data));
   // /delete[] newMessage;
-  std::cout << "delete 1 ok" << std::endl;
+  //std::cout << "delete 1 ok" << std::endl;
 
   delete[] inputData;
-  std::cout << "delete 2 ok" << std::endl;
+  //std::cout << "delete 2 ok" << std::endl;
 
   return newText;
 }

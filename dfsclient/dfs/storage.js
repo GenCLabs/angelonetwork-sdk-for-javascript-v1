@@ -86,9 +86,14 @@ exports.copyKey = function(keyObj){
   writeObj(path.join(currentUserKeyPath, "mainkey.key"), keyObj);
 }
 exports.getMyMainKey = function(){
-  return JSON.parse(fs.readFileSync(path.join(currentUserKeyPath, "mainkey.key")));
+  filepath = path.join(currentUserKeyPath, "mainkey.key");
+  if(!fs.existsSync(filepath))
+      return null;
+  return JSON.parse(fs.readFileSync(filepath));
 }
-
+exports.writeMainKeyCipher = function(obj){
+  writeObj(path.join(currentUserKeyPath, "mainkeycipher.json"), obj);
+}
 // exports.deleteKey = function(keyFile){
 //   deleteFile(keyFile + ".pub");
 //   deleteFile(keyFile + ".key");
