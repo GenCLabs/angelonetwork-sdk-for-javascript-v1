@@ -11,11 +11,15 @@ var otherUserList = null;
 var currentSharingFolder = null;
 var rootSharingFolder = null;
 var currentFolder = {linker : null, info : null};
+const b64_suffix = ".__base64__";
 exports.initialize = function(){
   storage.initializeFolder();
 }
 exports.register = function(email, password, secretKey, callback){
-  //var keyfile = storage.getTempFile(uuidv4());
+  var seckey = email + "," + password;
+  if(secretKey){
+    seckey = secretKey;
+  }
   crypto.genkey((keypair)=>{
     //crypto.encode_file(keyfile + ".key",(keystr)=>{
       //crypto.encode_file(keyfile + ".pub", (textkey)=>{
@@ -27,7 +31,7 @@ exports.register = function(email, password, secretKey, callback){
           storage.createUserDir(body.user);
           storage.copyKey(key);
           //storage.deleteKey(keyfile);
-          uploadMasterKey(secretKey, ()=>{
+          uploadMasterKey(seckey, ()=>{
             console.log("Upload master key finish");
           });
           createRootFolder(()=>{callback(body)});
@@ -337,7 +341,23 @@ var shareObject = function(obj, receiverId, receiverPubkey, callback){
     });
   //});
 }
-
+var shareObjectPlain = function(obj, receiverId, callback){
+  //var pubkey = receiverPubkey;
+  //var keyfile = storage.getTempFile(uuidv4()+".pub");
+  //crypto.decode_file(pubkey, keyfile, ()=>{
+    console.log("Share plain message" + obj + " from " + receiverId );
+    var filestr = JSON.stringify(obj);
+    var keystrb64 = Buffer.from(filestr).toString('base64') + ".__base64__";
+    //crypto.encrypt_text(filestr, "", pubkey, (result, encryptedText)=>{
+      //console.log("Encrypt object ok");
+      auth.sendMessage( receiverId, keystrb64,()=>{
+        console.log("Send message object finish ");
+        //storage.deleteFile(keyfile);
+        callback();
+      });
+    //});
+  //});
+}
 function sleep(ms){
   return new Promise(resolve=>{
       setTimeout(resolve,ms)
@@ -422,53 +442,66 @@ exports.reloadMessages = function(callback){
         // decrypt message
         //var currentUserKeyFile = storage.getKeyFile("main.key");
         try{
-          var privateKey = storage.getMyMainKey().key;
-        console.log("private key:" + privateKey)
+          
         //var currentUserKeyFile = storage.getTempFile(uuidv4()+".key");
         //console.log("private key 2:" + currentUserKeyFile);
         //crypto.decode_file(privateKey, currentUserKeyFile, ()=>{
-          crypto.decrypt_text(msg.content, privateKey, "", (decrypt_result, plain_text)=>{
-            try{
-              if(plain_text.trim() != ""){
-              
-                console.log("plain_message:" + plain_text);
-              
-                var sharingFile = JSON.parse(plain_text);
-                if(sharingFile.type != null){
-                  if(sharingFile.type == "filekey"){
-                    storage.addFile(sharingFile);// sharing file as key
-                  }
-                  else if(sharingFile.type == "masterkey"){
-                    console.log("Saving master key");
-                    storage.writeMainKeyCipher(sharingFile);
-                  }else{
-                    //sharingFile.type == "folder"){
-                    // folder handler
-                    folder.addLinkerToFolder(sharingFile.link, sharedFolder);
-                    //sharingFileList.push(sharingFile.link);
-                    sharingFile.children.forEach(element=>{ storage.addFile(element);});
-                  }
-                }else{
-                  var filelink_oldver = folder.newLinker(sharingFile.id, sharingFile.filename, "file");
-                  //sharingFileList.push(filelink_oldver);
-                  folder.addLinkerToFolder(sharingFile.link, sharedFolder);
-                  storage.addFile(sharingFile);
-                }
-              
-              }
-            }catch(err){
-              console.log(err);
-            }
-          });
-        //});
-      }catch(err){
-        console.log(err);
-      }
+          if(msg.content.endsWith(b64_suffix)){
+            plain_text = base64Decode(msg.content.substr(0, msg.content.length - b64_suffix.length));
+            console.log("plain_text:" + plain_text);
+            processPlainMessage(plain_text, sharedFolder);
+          }
+          else{
+            var privateKey = storage.getMyMainKey().key;
+            console.log("private key:" + privateKey);
+            crypto.decrypt_text(msg.content, privateKey, "", (decrypt_result, plain_text)=>{
+              processPlainMessage(plain_text, sharedFolder);
+            });
+          }
+          //});
+        }catch(err){
+          console.log(err);
+        }
       }
     }
     callback(rootSharingFolder);
   });
 }
+
+processPlainMessage = function(plain_text, sharedFolder){
+  try{
+    if(plain_text.trim() != ""){
+    
+      console.log("plain_message:" + plain_text);
+    
+      var sharingFile = JSON.parse(plain_text);
+      if(sharingFile.type != null){
+        if(sharingFile.type == "filekey"){
+          storage.addFile(sharingFile);// sharing file as key
+        }
+        else if(sharingFile.type == "masterkey"){
+          console.log("Saving master key");
+          storage.writeMainKeyCipher(sharingFile);
+        }else{
+          //sharingFile.type == "folder"){
+          // folder handler
+          folder.addLinkerToFolder(sharingFile.link, sharedFolder);
+          //sharingFileList.push(sharingFile.link);
+          sharingFile.children.forEach(element=>{ storage.addFile(element);});
+        }
+      }else{
+        var filelink_oldver = folder.newLinker(sharingFile.id, sharingFile.filename, "file");
+        //sharingFileList.push(filelink_oldver);
+        folder.addLinkerToFolder(sharingFile.link, sharedFolder);
+        storage.addFile(sharingFile);
+      }
+    
+    }
+  }catch(err){
+    console.log(err);
+  }
+}
+
 exports.getRootSharingFolder = function(){
   return rootSharingFolder;
 }
@@ -515,7 +548,12 @@ exports.syncFileUpload = function(){
 exports.genSecretKey = function(length){
   return crypto.genSecretKey(length);
 }
-
+var base64Encode = function(keystr){
+  return Buffer.from(keystr).toString('base64');
+}
+var base64Decode = function(b64){
+  return Buffer.from(b64, 'base64').toString('ascii');
+}
 var uploadMasterKey = exports.uploadMasterKey = function(secretKey, callback){
   content = secretKey;
   console.log("Gen derive key");
@@ -523,11 +561,11 @@ var uploadMasterKey = exports.uploadMasterKey = function(secretKey, callback){
     console.log("Derive key pair " + keypair);
     mainkey = storage.getMyMainKey();
     var keystr = JSON.stringify(mainkey);
-    var keystrb64 = Buffer.from(keystr).toString('base64');
+    var keystrb64 = base64Encode(keystr);//Buffer.from(keystr).toString('base64');
     crypto.encrypt_text_aes(keystrb64, keypair.privateKey, keypair.publicKey, (result, cipherText)=>{
       var masterkeyMsg = { type : "masterkey", cipher : cipherText, version : "1.0"};    
       console.log(masterkeyMsg);
-      shareObject(masterkeyMsg, currentUser._id, mainkey.pubkey, callback);    
+      shareObjectPlain(masterkeyMsg, currentUser._id, mainkey.pubkey, callback);
     });
   });
 }
