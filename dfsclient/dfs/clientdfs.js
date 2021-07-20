@@ -12,14 +12,16 @@ var currentSharingFolder = null;
 var rootSharingFolder = null;
 var currentFolder = {linker : null, info : null};
 const b64_suffix = ".__base64__";
+var userMasterKeyCipherKey = null;
+
 exports.initialize = function(){
   storage.initializeFolder();
 }
 exports.register = function(email, password, secretKey, callback){
   var seckey = email + "," + password;
-  if(secretKey){
-    seckey = secretKey;
-  }
+  // if(secretKey){
+  //   seckey = secretKey;
+  // }
   crypto.genkey((keypair)=>{
     //crypto.encode_file(keyfile + ".key",(keystr)=>{
       //crypto.encode_file(keyfile + ".pub", (textkey)=>{
@@ -45,10 +47,23 @@ exports.login = function(email, password, callback){
     //console.log(body);
     currentUser = body.user;
     storage.createUserDir(body.user);
-    createRootFolder(()=>{
-      var key = storage.getMyMainKey();
-      callback(body, key != null);
-    })
+    var key = storage.getMyMainKey();
+    if(key == null)
+    {
+      crypto.derivekey(email+','+password, (keypair)=>{
+        userMasterKeyCipherKey = keypair;
+        recoverMasterKey((result)=>{
+          console.log("Recover key success");
+          reloadRootFolder((result)=>{});
+        });
+      });
+      callback(body, true);
+    }else{
+      createRootFolder(()=>{
+        // callback(body, key != null);
+        callback(body, true);
+      });
+    }
   });  
 }
 exports.getCurrentUser = function(){
@@ -57,7 +72,21 @@ exports.getCurrentUser = function(){
 exports.getCurrentFolder = function(){
   return currentFolder;
 }
-
+var reloadRootFolder = function(callback){
+  var folderLinker = storage.readRootFolder();
+  if(folderLinker == null){
+    console.log("No root folder");
+    callback(false);
+  }else{
+    // read content
+    openFolder(folderLinker, (folder)=>{
+      currentFolder.info = folder;
+      currentFolder.linker = folderLinker;
+      console.log(currentFolder);
+      callback(true);
+    });
+  }
+}
 var createRootFolder = exports.createRootFolder = function(callback){
   console.log("Create root folder");
   var folderLinker = storage.readRootFolder();
@@ -74,7 +103,9 @@ var createRootFolder = exports.createRootFolder = function(callback){
       storage.createRootFolder(id);
       folderLinker = storage.readRootFolder();
       currentFolder.linker = folderLinker;
-      callback();
+      uploadRootFolder(folderLinker, ()=>{
+        callback();
+      });      
     })
   }else{
     // read content
@@ -106,12 +137,25 @@ exports.reloadUsers=function(callback){
 
 var uploadKey = function(keyobject, callback){
   var keyfile = storage.getMyMainKey();
-  var filestr = JSON.stringify(keyobject);
-  console.log(filestr);
-  console.log(keyfile);
-  shareObject(keyobject, currentUser._id, keyfile.pubkey, callback);
+  if(keyfile != null){
+    var filestr = JSON.stringify(keyobject);
+    console.log(filestr);
+    console.log(keyfile);
+    shareObject(keyobject, currentUser._id, keyfile.pubkey, callback);
+  }
 }
-
+var uploadRootFolder = function(folderObj, callback){
+  var metadata={ type: "rootfolder", data: folderObj};
+  console.log("Upload key file " + metadata);
+            
+  var keyfile = storage.getMyMainKey();
+  if(keyfile != null){
+    var filestr = JSON.stringify(metadata);
+    console.log(filestr);
+    console.log(keyfile);
+    shareObject(metadata, currentUser._id, keyfile.pubkey, callback);
+  }
+}
 var decodeFile = function(textContent, callback){
   var keyfile = storage.getTempFile(uuidv4()+".pub");
   crypto.decode_file(textContent, keyfile, ()=>{
@@ -258,19 +302,23 @@ exports.createSubFile=function(filepath, callback){
   
 }
 var openFolder = exports.openFolder=function(folderLinker, callback){
-  // download folder by id
-  var fid = folderLinker.id;
-  console.log("open folder: " + fid);
-  var finfo = storage.readFile(fid);
-  if(finfo != null){
-    var tempfile = storage.getTempFile(uuidv4());
-    downloadFile(finfo, tempfile, (fname)=>{
-      // parse folder content
-      var folder = storage.readObj(tempfile);
-      console.log("save folderinfo: " + tempfile);
-      console.log("folderinfo: " + folder);
-      callback(folder);
-    });
+  if(storage.getMyMainKey() != null){
+    // download folder by id
+    var fid = folderLinker.id;
+    console.log("open folder: " + fid);
+    var finfo = storage.readFile(fid);
+    if(finfo != null){
+      var tempfile = storage.getTempFile(uuidv4());
+      downloadFile(finfo, tempfile, (fname)=>{
+        // parse folder content
+        var folder = storage.readObj(tempfile);
+        console.log("save folderinfo: " + tempfile);
+        console.log("folderinfo: " + folder);
+        callback(folder);
+      });
+    }else{
+      callback(null);
+    }
   }else{
     callback(null);
   }
@@ -437,6 +485,7 @@ exports.reloadMessages = function(callback){
       if(currentUser._id == msg.to)
       {
         console.log("equal");
+        console.log(msg.content);
       //sharingFileList.push(msg);
         //sharingFileList.push(msg);
         // decrypt message
@@ -452,11 +501,14 @@ exports.reloadMessages = function(callback){
             processPlainMessage(plain_text, sharedFolder);
           }
           else{
-            var privateKey = storage.getMyMainKey().key;
-            console.log("private key:" + privateKey);
-            crypto.decrypt_text(msg.content, privateKey, "", (decrypt_result, plain_text)=>{
-              processPlainMessage(plain_text, sharedFolder);
-            });
+            var mainKey = storage.getMyMainKey();
+            if(mainKey != null){
+              var privateKey = mainKey.key;
+              console.log("private key:" + privateKey);
+              crypto.decrypt_text(msg.content, privateKey, "", (decrypt_result, plain_text)=>{
+                processPlainMessage(plain_text, sharedFolder);
+              });
+            }
           }
           //});
         }catch(err){
@@ -464,6 +516,7 @@ exports.reloadMessages = function(callback){
         }
       }
     }
+    reloadRootFolder((result)=>{});
     callback(rootSharingFolder);
   });
 }
@@ -479,9 +532,18 @@ processPlainMessage = function(plain_text, sharedFolder){
         if(sharingFile.type == "filekey"){
           storage.addFile(sharingFile);// sharing file as key
         }
+        else if(sharingFile.type == "rootfolder"){
+          storage.writeRootFolder(sharingFile.data);
+        }
         else if(sharingFile.type == "masterkey"){
           console.log("Saving master key");
           storage.writeMainKeyCipher(sharingFile);
+          if(storage.getMyMainKey() == null){
+            recoverMasterKey((result)=>{
+              console.log("Recover key success");
+              reloadRootFolder((result)=>{});
+            });
+          }
         }else{
           //sharingFile.type == "folder"){
           // folder handler
@@ -565,7 +627,28 @@ var uploadMasterKey = exports.uploadMasterKey = function(secretKey, callback){
     crypto.encrypt_text_aes(keystrb64, keypair.privateKey, keypair.publicKey, (result, cipherText)=>{
       var masterkeyMsg = { type : "masterkey", cipher : cipherText, version : "1.0"};    
       console.log(masterkeyMsg);
-      shareObjectPlain(masterkeyMsg, currentUser._id, mainkey.pubkey, callback);
+      shareObjectPlain(masterkeyMsg, currentUser._id, callback);
     });
   });
+}
+
+var decryptMasterKey = function(keypair, cipherText, callback)
+{
+  crypto.decrypt_text_aes(cipherText, keypair.privateKey, keypair.publicKey, (result, plain_text)=>{
+    var textcontent = base64Decode(plain_text);
+    console.log(textcontent);
+    var mainKeyObj = JSON.parse(textcontent);
+    callback(mainKeyObj);
+  });
+}
+
+var recoverMasterKey = function(callback){
+  var mainkeycipher = storage.getMyMainKeyCipher();
+  if(userMasterKeyCipherKey != null && mainkeycipher != null)
+  {
+    decryptMasterKey(userMasterKeyCipherKey, mainkeycipher.cipher, (mainKeyObj)=>{
+      storage.copyKey(mainKeyObj);
+      callback(true);
+    });
+  }
 }

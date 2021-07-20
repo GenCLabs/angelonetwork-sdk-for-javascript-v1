@@ -74,6 +74,9 @@ exports.readRootFolder = function(){
     return null;
   }
 }
+exports.writeRootFolder = function(obj){
+  writeObj(path.join(currentUserPath, "rootFolder.json"), obj);
+}
 exports.writeUserList = function(userlist){
   writeObj(path.join(currentUserPath, "userlist.json"), userlist); 
 }
@@ -93,6 +96,12 @@ exports.getMyMainKey = function(){
 }
 exports.writeMainKeyCipher = function(obj){
   writeObj(path.join(currentUserKeyPath, "mainkeycipher.json"), obj);
+}
+exports.getMyMainKeyCipher = function(){
+  filepath = path.join(currentUserKeyPath, "mainkeycipher.json");
+  if(!fs.existsSync(filepath))
+      return null;
+  return JSON.parse(fs.readFileSync(filepath));
 }
 // exports.deleteKey = function(keyFile){
 //   deleteFile(keyFile + ".pub");

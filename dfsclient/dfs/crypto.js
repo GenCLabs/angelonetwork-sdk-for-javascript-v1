@@ -68,7 +68,7 @@ exports.decrypt_text = function(text, privateKeyFile, publicKeyFile, callback){
     function (error, stdout, stderr) {
       //console.log(stdout);
       
-        callback(true, stdout);
+      callback(true, stdout);
       
     }
   );
