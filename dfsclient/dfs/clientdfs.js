@@ -36,7 +36,9 @@ exports.register = function(email, password, secretKey, callback){
           uploadMasterKey(seckey, ()=>{
             console.log("Upload master key finish");
           });
-          createRootFolder(()=>{callback(body)});
+          createRootFolder(()=>{
+            callback(body);
+          });
         })
       //});
     //});
@@ -104,6 +106,7 @@ var createRootFolder = exports.createRootFolder = function(callback){
       folderLinker = storage.readRootFolder();
       currentFolder.linker = folderLinker;
       uploadRootFolder(folderLinker, ()=>{
+        console.log("Upload root folder finish");
         callback();
       });      
     })
@@ -146,7 +149,8 @@ var uploadKey = function(keyobject, callback){
 }
 var uploadRootFolder = function(folderObj, callback){
   var metadata={ type: "rootfolder", data: folderObj};
-  console.log("Upload key file " + metadata);
+  console.log("Upload rootfolder file :");
+  console.log(metadata);
             
   var keyfile = storage.getMyMainKey();
   if(keyfile != null){
@@ -380,8 +384,8 @@ var shareObject = function(obj, receiverId, receiverPubkey, callback){
     console.log("Share " + obj + " from " + receiverId + " pub key:" + receiverPubkey);
     var filestr = JSON.stringify(obj);
     crypto.encrypt_text(filestr, "", pubkey, (result, encryptedText)=>{
-      console.log("Encrypt object ok");
-      auth.sendMessage( receiverId, encryptedText,()=>{
+      console.log("Encrypt object ok:" + encryptedText);
+      auth.sendMessage( receiverId, encryptedText,(body)=>{
         console.log("Send message object finish ");
         //storage.deleteFile(keyfile);
         callback();
@@ -398,7 +402,7 @@ var shareObjectPlain = function(obj, receiverId, callback){
     var keystrb64 = Buffer.from(filestr).toString('base64') + ".__base64__";
     //crypto.encrypt_text(filestr, "", pubkey, (result, encryptedText)=>{
       //console.log("Encrypt object ok");
-      auth.sendMessage( receiverId, keystrb64,()=>{
+      auth.sendMessage( receiverId, keystrb64,(body)=>{
         console.log("Send message object finish ");
         //storage.deleteFile(keyfile);
         callback();
