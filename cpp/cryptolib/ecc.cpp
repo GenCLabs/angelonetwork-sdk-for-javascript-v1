@@ -58,6 +58,8 @@ using CryptoPP::OID;
 using CryptoPP::PrivateKey;
 using CryptoPP::PublicKey;
 
+#include "cryptocommon.h"
+
 void SavePrivateKey(const PrivateKey& key, const string& file)
 {
     FileSink sink(file.c_str());
@@ -133,7 +135,7 @@ void PrintPublicKey(const CryptoPP::DL_PublicKey_EC<ECP>& key, std::ostream& out
     out << "  y: " << std::hex << point.y << endl;
 }
 
-bool ECCCrypto::genKey(const std::string& privateKeyFile, const std::string& publicKeyFile){
+bool ECCCrypto::genKeyFile(const std::string& privateKeyFile, const std::string& publicKeyFile){
     // CryptoPP::ECIES < ECC_ALGORITHM >::PrivateKey privateKey;    
     //     CryptoPP::ECIES < ECC_ALGORITHM >::PublicKey publicKey;    
     
@@ -159,7 +161,7 @@ bool ECCCrypto::genKey(const std::string& privateKeyFile, const std::string& pub
     UpdateDecryptor();
     return true;
 }
-bool ECCCrypto::loadKey(const std::string &privateKeyFile, const std::string &publicKeyFile)
+bool ECCCrypto::loadKeyFile(const std::string &privateKeyFile, const std::string &publicKeyFile)
 {
   
   if(privateKeyFile != ""){
@@ -177,7 +179,114 @@ bool ECCCrypto::loadKey(const std::string &privateKeyFile, const std::string &pu
   return true;
 }
 
-bool ECCCrypto::encrypt(const byte* message, int length, byte*& newmessage, int& newlength)
+bool ECCCrypto::genKeyText(std::string& privateKeyText, std::string& publicKeyText) {
+    // CryptoPP::ECIES < ECC_ALGORITHM >::PrivateKey privateKey;    
+    //     CryptoPP::ECIES < ECC_ALGORITHM >::PublicKey publicKey;    
+
+
+    // Key Generation
+    _privateKey.Initialize(_rng, ECC_CURVE);
+    _privateKey.MakePublicKey(_publicKey);
+
+    // Key Validation
+    if (!_privateKey.Validate(_rng, 3))
+    {
+        return false;//throw runtime_error ("Private key validation failed");      
+    }
+
+    if (!_publicKey.Validate(_rng, 3))
+    {
+        return false;//throw runtime_error ("Public key validation failed");      
+    }
+    // Private and Public keys    
+    // {
+    //     CryptoPP::ByteQueue queue;
+    //     _privateKey.Save(queue);
+    //     CryptoPP::Base64Encoder enc(new StringSink(privateKeyText));
+    //     queue.CopyTo(enc);
+    // }
+    // {
+    //     CryptoPP::ByteQueue queue;
+    //     _publicKey.Save(queue);
+    //     CryptoPP::Base64Encoder enc(new StringSink(publicKeyText));
+    //     queue.CopyTo(enc);
+    // }
+    // std::cout << "private key: " << privateKeyText << std::endl;
+    // std::cout << "public key: " << publicKeyText << std::endl;
+
+    { CryptoPP::ByteQueue queue;
+        _publicKey.Save(queue);
+        CryptoPP::lword size = queue.TotalBytesRetrievable();
+
+        std::unique_ptr<byte> buf(new byte[size]);
+        queue.Get(buf.get(), size);
+        	publicKeyText = EncodeBase64(buf.get(), size);
+          //std::cout << "public key" << publicKeyText << std::endl;
+          
+        }
+
+    { CryptoPP::ByteQueue queue;
+        _privateKey.Save(queue);
+        CryptoPP::lword size = queue.TotalBytesRetrievable();
+
+        std::unique_ptr<byte> buf(new byte[size]);
+        queue.Get(buf.get(), size);
+        	privateKeyText = EncodeBase64(buf.get(), size);
+          //std::cout << "public key" << privateKeyText << std::endl;
+        }
+    
+    UpdateEncryptor();
+    UpdateDecryptor();
+    return true;
+}
+
+bool ECCCrypto::loadKeyText(const std::string& privateKeyText, const std::string& publicKeyText)
+{
+    //std::cout << "Load key text " << std::endl;
+    if (privateKeyText != "") {
+
+    //std::cout << "Load key text " << privateKeyText << std::endl;
+        // CryptoPP::ByteQueue queue;        
+        // StringSource ss(privateKeyText, true, new CryptoPP::Base64Decoder(&queue));
+        // _privateKey.Load(queue);
+
+        byte* key;
+	int length;
+	DecodeBase64(privateKeyText, key, length);
+  //std::cout << "len:" << length << std::endl;
+  CryptoPP::ByteQueue queue;
+	queue.Put(key, length);
+  _privateKey.Load(queue);
+        //std::cout << "Load private key text ok" << std::endl;
+    }
+    if (publicKeyText != "") {    
+
+    //std::cout << "Load key text " << publicKeyText<< std::endl;
+        // CryptoPP::ByteQueue queue;
+        // StringSource ss(publicKeyText, true, new CryptoPP::Base64Decoder(&queue));
+        // _publicKey.Load(queue);
+
+
+        byte* key;
+	int length;
+	DecodeBase64(publicKeyText, key, length);
+  //std::cout << "len:" << length << std::endl;
+  CryptoPP::ByteQueue queue;
+	queue.Put(key, length);
+  _publicKey.Load(queue);
+
+        //std::cout << "Load public key text ok" << std::endl;
+    }
+    if (publicKeyText != "")
+        UpdateEncryptor();
+    if (privateKeyText != "")
+        UpdateDecryptor();
+    
+        //std::cout << "Load all key text ok" << std::endl;
+    return true;
+}
+
+bool ECCCrypto::encrypt(const std::vector<byte>& message, int length, std::vector<byte>& newmessage, int& newlength)
 {
   int plainTextLength = length;// + 1;
   size_t cipherTextLength = _Encryptor.CiphertextLength (plainTextLength);
@@ -193,23 +302,23 @@ bool ECCCrypto::encrypt(const byte* message, int length, byte*& newmessage, int&
   // cout << cipherTextLength << endl;
 
   // Encryption buffer
-  byte* cipherText = new byte[cipherTextLength];
-  if (NULL == cipherText)
+  std::vector<byte> cipherText(cipherTextLength);
+  //if (NULL == cipherText)
   {        
     //throw runtime_error ("Cipher text allocation failure");      
   }
     
-  memset (cipherText, 0xFB, cipherTextLength);
+  memset (&cipherText[0], 0xFB, cipherTextLength);
 
   // Encryption
   //Encryptor.Encrypt(_rng, reinterpret_cast < const byte * > (message.data ()), plainTextLength, cipherText); 
-  _Encryptor.Encrypt(_rng, message, plainTextLength, cipherText);
+  _Encryptor.Encrypt(_rng, &message[0], plainTextLength, &cipherText[0]);
   newmessage = cipherText;
   newlength = cipherTextLength;
   return true;
 }
 
-bool ECCCrypto::decrypt(const byte* message, int length, byte*& newmessage, int& newlength){
+bool ECCCrypto::decrypt(const std::vector<byte>& message, int length, std::vector<byte>& newmessage, int& newlength){
   //_Decryptor(_privateKey);
     size_t cipherTextLength = length;// + 1;
     // Size
@@ -222,16 +331,16 @@ bool ECCCrypto::decrypt(const byte* message, int length, byte*& newmessage, int&
     }
 
     // Decryption Buffer
-    byte * recoveredText = new byte[recoveredTextLength];
-    if (NULL == recoveredText)      
-    {        
-      std::cout << ("recoveredText allocation failure") << std::endl;      
-    }    
+    std::vector<byte> recoveredText(recoveredTextLength);
+    // if (NULL == recoveredText)      
+    // {        
+    //   std::cout << ("recoveredText allocation failure") << std::endl;      
+    // }    
 
-    memset (recoveredText, 0xFB, recoveredTextLength);
+    memset (&recoveredText[0], 0xFB, recoveredTextLength);
 
     // Decryption
-    _Decryptor.Decrypt (_rng, message, cipherTextLength, recoveredText);     
+    _Decryptor.Decrypt (_rng, &message[0], cipherTextLength, &recoveredText[0]);     
 
     // cout << "Recovered text: " << recoveredText << endl;
 	// cout << "Recovered text length is " << recoveredTextLength << endl;

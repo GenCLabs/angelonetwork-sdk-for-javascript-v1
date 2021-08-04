@@ -11,9 +11,12 @@ executable("crypto") {
     "cryptolib/aes.cpp", 
     "cryptolib/ecc.cpp",
     "cryptolib/cryptocommon.cpp",
-    "cryptolib/cryptolib.cpp"
+    "cryptolib/cryptolib.cpp",
+    "cryptolib/keyderivation.cpp"
   ]
   include_dirs = ["cryptolib", "cryptopp/src"]
-  deps = ["//cryptopp:cryptopp"]
+  #deps = ["//cryptopp:cryptopp"]
   #deps = [":build_cryptopp"]
+  libs = ["cryptopp/src/libcryptopp.a"]
+  #lib_dirs = ["../cryptopp/src/libcryptopp.a"]
 }

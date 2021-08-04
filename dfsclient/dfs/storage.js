@@ -74,25 +74,40 @@ exports.readRootFolder = function(){
     return null;
   }
 }
+exports.writeRootFolder = function(obj){
+  writeObj(path.join(currentUserPath, "rootFolder.json"), obj);
+}
 exports.writeUserList = function(userlist){
   writeObj(path.join(currentUserPath, "userlist.json"), userlist); 
 }
 exports.writeMessageList = function(messagelist){
   writeObj(path.join(currentUserPath, "messagelist.json"), messagelist); 
 }
-exports.copyKey = function(keyFile, keyObj){
-  copyFile(keyFile + ".pub", path.join(currentUserKeyPath, "main.pub"));
-  copyFile(keyFile + ".key", path.join(currentUserKeyPath, "main.key"));
+exports.copyKey = function(keyObj){
+  //copyFile(keyFile + ".pub", path.join(currentUserKeyPath, "main.pub"));
+  //copyFile(keyFile + ".key", path.join(currentUserKeyPath, "main.key"));
   writeObj(path.join(currentUserKeyPath, "mainkey.key"), keyObj);
 }
 exports.getMyMainKey = function(){
-  return JSON.parse(fs.readFileSync(path.join(currentUserKeyPath, "mainkey.key")));
+  filepath = path.join(currentUserKeyPath, "mainkey.key");
+  if(!fs.existsSync(filepath))
+      return null;
+  return JSON.parse(fs.readFileSync(filepath));
 }
+exports.writeMainKeyCipher = function(obj){
+  writeObj(path.join(currentUserKeyPath, "mainkeycipher.json"), obj);
+}
+exports.getMyMainKeyCipher = function(){
+  filepath = path.join(currentUserKeyPath, "mainkeycipher.json");
+  if(!fs.existsSync(filepath))
+      return null;
+  return JSON.parse(fs.readFileSync(filepath));
+}
+// exports.deleteKey = function(keyFile){
+//   deleteFile(keyFile + ".pub");
+//   deleteFile(keyFile + ".key");
+// }
 
-exports.deleteKey = function(keyFile){
-  deleteFile(keyFile + ".pub");
-  deleteFile(keyFile + ".key");
-}
 exports.addFile = function(metadata){
   writeObj(path.join(currentUserFilePath, metadata.id + ".json"), metadata);
 }

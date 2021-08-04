@@ -1,5 +1,6 @@
 #include "cryptolib.h"
 #include "cryptocommon.h"
+#include "keyderivation.h"
 #include "aesCus.h"
 #include "ecc.h"
 
@@ -20,11 +21,14 @@ using CryptoPP::Redirector;
 CryptoLib::CryptoLib(const std::string& cryptoType){
   if(cryptoType == "aes"){
     _crypto = new AESCrypto();
+    _cryptoType = CryptoType::LIB_AES;
   }else if(cryptoType == "ecc"){
     _crypto = new ECCCrypto();
+    _cryptoType = CryptoType::LIB_ECC;
   }
 }
 CryptoLib::CryptoLib(CryptoType cryptoType){
+  _cryptoType = cryptoType;
   if(cryptoType == CryptoType::LIB_AES){
     _crypto = new AESCrypto();
   }else if(cryptoType == CryptoType::LIB_ECC){
@@ -32,28 +36,48 @@ CryptoLib::CryptoLib(CryptoType cryptoType){
   }
 }
 CryptoLib::CryptoLib(CryptoType cryptoType,const std::string& privateKeyFile, const std::string& publicKeyFile){
+  _cryptoType = cryptoType;
   if(cryptoType == CryptoType::LIB_AES){
     _crypto = new AESCrypto();
   }else if(cryptoType == CryptoType::LIB_ECC){
     _crypto = new ECCCrypto();
   }
-  loadKey(privateKeyFile, publicKeyFile);
+  loadKeyFile(privateKeyFile, publicKeyFile);
 }
 
-bool CryptoLib::genKey(const std::string& privateKeyFile, const std::string& publicKeyFile){
-  return _crypto->genKey(privateKeyFile, publicKeyFile);
+bool CryptoLib::genKeyFile(const std::string& privateKeyFile, const std::string& publicKeyFile){
+  return _crypto->genKeyFile(privateKeyFile, publicKeyFile);
 }
-bool CryptoLib::loadKey(const std::string& privateKeyFile, const std::string& publicKeyFile){
-  return _crypto->loadKey(privateKeyFile, publicKeyFile);
+bool CryptoLib::loadKeyFile(const std::string& privateKeyFile, const std::string& publicKeyFile){
+  return _crypto->loadKeyFile(privateKeyFile, publicKeyFile);
 }
+
+bool CryptoLib::genKeyText() 
+{
+    std::string privateKeyFile, publicKeyFile;
+    _crypto->genKeyText(privateKeyFile, publicKeyFile);
+    std::cout << "{\"privateKey\":\"" << privateKeyFile << "\",\"publicKey\":\"" << publicKeyFile << "\",\"keyType\":\"" << getCryptoType() << "\"}";
+    return true;
+}
+
+bool CryptoLib::loadKeyText(const std::string& privateKeyFile, const std::string& publicKeyFile) {
+    return _crypto->loadKeyText(privateKeyFile, publicKeyFile);
+}
+
 std::string CryptoLib::encryptText(const std::string& message){
-  int length = message.length() + 1;
-  byte* newMessage;
+  int length = message.length();
+  std::vector<byte> newMessage;
+  std::vector<byte> inMessage(length);
+  std::copy(&message[0], (&message[0])+length, &inMessage[0]);
   int newLength;
-  _crypto->encrypt(reinterpret_cast<const byte*>(message.data()), length, newMessage, newLength);
+  _crypto->encrypt(inMessage, length, newMessage, newLength);
   //std::string newText(reinterpret_cast<char*>(newMessage));
-  std::string newText=EncodeBase64(newMessage, newLength);
-  delete[] newMessage;
+  std::string newText=EncodeBase64(&newMessage[0], newLength);
+    //std::cout << "delete 1 ok" << std::endl;
+
+  //delete[] newMessage;
+    //std::cout << "delete 1 ok 2" << std::endl;
+  //std::cout << newText << std::endl;
   return newText;
 }
 std::string CryptoLib::decryptText(const std::string& message){
@@ -61,15 +85,25 @@ std::string CryptoLib::decryptText(const std::string& message){
   int length;
   DecodeBase64(message, inputData, length);
   //int length = message.length() + 1;
-  byte* newMessage;
+  std::vector<byte> newMessage;
+  std::vector<byte> inData(length);
+  std::copy(inputData, inputData + length, &inData[0]);
   int newLength;
   //_crypto->decrypt(reinterpret_cast<const byte*>(message.data()), length, newMessage, newLength);
-  _crypto->decrypt(inputData, length, newMessage, newLength);
-  std::string newText(reinterpret_cast<char*>(newMessage));
-  delete[] newMessage;
+  _crypto->decrypt(inData, length, newMessage, newLength);
+  byte* data = new byte[newLength + 1];
+  data[newLength] = 0;
+  std::copy(&newMessage[0], (&newMessage[0]) + newLength, data);
+  std::string newText(reinterpret_cast<char*>(data));
+  // /delete[] newMessage;
+  //std::cout << "delete 1 ok" << std::endl;
+
   delete[] inputData;
+  //std::cout << "delete 2 ok" << std::endl;
+
   return newText;
 }
+
 inline bool EndOfFile(const FileSource& file)
 {
   std::istream* stream = const_cast<FileSource&>(file).GetStream();
@@ -98,13 +132,13 @@ void CryptoLib::encryptFile(const std::string& inputFile, const std::string& out
   {
     ifs.Pump(BLOCK_SIZE);
     //filter.Flush(false);
-    byte* newMessage; int newLength;
-    _crypto->encrypt((byte*)buffer.data(), buffer.size(), newMessage, newLength);
+    std::vector<byte> newMessage; int newLength;
+    _crypto->encrypt(buffer, buffer.size(), newMessage, newLength);
     buffer.clear();
 
-    ofs.Put(newMessage, newLength);
+    ofs.Put(&newMessage[0], newLength);
     processed += BLOCK_SIZE;
-    delete []newMessage;
+    //delete []newMessage;
     //if (processed % (1024*1024*10) == 0)
     //  std::cout << "Processed: " << meter.GetTotalBytes() << std::endl;
   }
@@ -134,13 +168,13 @@ void CryptoLib::decryptFile(const std::string& inputFile, const std::string& out
   {
     ifs.Pump(crypt_size);
     //filter.Flush(false);
-    byte* newMessage; int newLength;
-    _crypto->decrypt((byte*)buffer.data(), buffer.size(), newMessage, newLength);
+    std::vector<byte> newMessage; int newLength;
+    _crypto->decrypt(buffer, buffer.size(), newMessage, newLength);
     buffer.clear();
 
-    ofs.Put(newMessage, newLength);
+    ofs.Put(&newMessage[0], newLength);
     processed += crypt_size;
-    delete []newMessage;
+    //delete []newMessage;
     //if (processed % (1024*1024*10) == 0)
     //  std::cout << "Processed: " << meter.GetTotalBytes() << std::endl;
   }
@@ -148,6 +182,29 @@ void CryptoLib::decryptFile(const std::string& inputFile, const std::string& out
   // Signal there is no more data to process.
   // The dtor's will do this automatically.
   ofs.MessageEnd();
+}
+
+void CryptoLib::deriveKey(const std::string& longtext)
+{
+    std::string key, iv;
+    string2AESKeyBase64(longtext, key, iv);
+    std::cout << "{\"privateKey\":\"" << key << "\",\"publicKey\":\"" << iv << "\",\"keyType\":\"aes\"}";
+}
+
+std::string CryptoLib::getCryptoType()
+{
+    switch (_cryptoType)
+    {
+    case LIB_AES:
+        return "aes";
+        break;
+    case LIB_ECC:
+        return "ecc";
+        break;
+    default:
+        break;
+    }
+    return "";
 }
 
 CryptoLib::~CryptoLib(){

@@ -100,7 +100,8 @@
     </ClCompile>
     <Link>
       <ErrorReporting>NoErrorReport</ErrorReporting>
-      <AdditionalDependencies>cryptlib.lib</AdditionalDependencies>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
       <AdditionalLibraryDirectories>$(Platform)\Output\$(Configuration)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>$(OutDir)\cryptlib.pdb</ProgramDatabaseFile>
@@ -240,15 +241,11 @@
   </ItemDefinitionGroup>
   <!-- Source Files -->
   <ItemGroup>
-    <ProjectReference Include="cryptlib.vcxproj">
-      <Project>{c39f4b46-6e89-4074-902e-ca57073044d2}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="..\cryptolib\aes.cpp" />
     <ClCompile Include="..\cryptolib\cryptocommon.cpp" />
     <ClCompile Include="..\cryptolib\cryptolib.cpp" />
     <ClCompile Include="..\cryptolib\ecc.cpp" />
+    <ClCompile Include="..\cryptolib\keyderivation.cpp" />
     <ClCompile Include="..\crypto\main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -257,6 +254,12 @@
     <ClInclude Include="..\cryptolib\cryptocommon.h" />
     <ClInclude Include="..\cryptolib\cryptolib.h" />
     <ClInclude Include="..\cryptolib\ecc.h" />
+    <ClInclude Include="..\cryptolib\keyderivation.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\cryptopp\src\cryptlib.vcxproj">
+      <Project>{c39f4b46-6e89-4074-902e-ca57073044d2}</Project>
+    </ProjectReference>
   </ItemGroup>
   <!-- Header Files -->
   <!-- Test Vectors -->

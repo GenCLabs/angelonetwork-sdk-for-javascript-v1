@@ -74,7 +74,7 @@ app.on('ready', readyApp)
 ipcMain.on('open-registry', (event)=>{showRegistry()})
 ipcMain.on('open-signin', (event)=>{showLogin()})
 ipcMain.on('register', (event,args)=>{  
-  clientdfs.register(args[0],args[1], (obj)=>{
+  clientdfs.register(args[0],args[1], args[2], (obj)=>{
     user = obj;
     
     showIndex();
@@ -82,11 +82,14 @@ ipcMain.on('register', (event,args)=>{
   });
 });
 ipcMain.on('login', (event,args)=>{
-  clientdfs.login(args[0],args[1], (obj)=>{
+  clientdfs.login(args[0],args[1], (obj, hasMasterKey)=>{
     user = obj;
     
     showIndex();
-    event.sender.send('login-done', obj)
+    if(hasMasterKey)
+      event.sender.send('login-done', obj);
+    else
+      event.sender.send('login-masterKey', obj);
   });
 });
 ipcMain.on('reload-users', (event) =>{
