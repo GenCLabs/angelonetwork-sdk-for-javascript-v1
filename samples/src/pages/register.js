@@ -92,11 +92,12 @@ class Register extends React.Component {
       const ipcRenderer  = electron.ipcRenderer;
       //alert('login' + document.getElementById('email').value);
       //alert('login' + document.getElementById('password').value);
-      alert('login' + document.getElementById('secretKey').value); 
+      //alert('login' + document.getElementById('secretKey').value); 
       ipcRenderer.send('register',
         [document.getElementById('email').value,
         document.getElementById('password').value,
-        document.getElementById('secretKey').value
+        ""
+        //document.getElementById('secretKey').value
       ]);
     }
   };
@@ -108,7 +109,7 @@ class Register extends React.Component {
   render(){
     const { classes } = this.props;
     const {clientdfs} = require('@genclabs/dfsclient');
-    var secretKey = clientdfs.genSecretKey(10);
+    //var secretKey = clientdfs.genSecretKey(10);
     return (
       <main className={classes.main}>
         <CssBaseline />
@@ -132,11 +133,11 @@ class Register extends React.Component {
               control={<Checkbox value="remember" color="primary" />}
               label="Remember me"
             /> */}
-            
+{/*             
             <Typography component="h1" variant="h5">
             Secret key (write it down and save it):
             </Typography>
-            <Input name="secretKey" type="text" id="secretKey" value={secretKey}/>
+            <Input name="secretKey" type="text" id="secretKey" value={secretKey}/> */}
             <Button
               type="submit"
               fullWidth
