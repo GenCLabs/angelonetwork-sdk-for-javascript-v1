@@ -33,12 +33,15 @@ exports.register = function(email, password, secretKey, callback){
           storage.createUserDir(body.user);
           storage.copyKey(key);
           //storage.deleteKey(keyfile);
-          uploadMasterKey(seckey, ()=>{
-            console.log("Upload master key finish");
-          });
           createRootFolder(()=>{
-            callback(body);
+            console.log("finish create root folder and callback to register");
+
+            uploadMasterKey(seckey, ()=>{
+              console.log("Upload master key finish");
+              callback(body);
+            });
           });
+          
         })
       //});
     //});

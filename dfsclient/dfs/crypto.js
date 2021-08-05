@@ -1,7 +1,7 @@
 var program = "";
 var opsys = process.platform;
 if (opsys == "darwin") {
-  program = __dirname + "/crypto/"+ opsys +"/crypto";
+  program = __dirname + "/crypto/"+ "macos" +"/crypto";
 } else if (opsys == "win32" || opsys == "win64") {
   program = __dirname + "/crypto/"+ opsys +"/crypto.exe";
 } else if (opsys == "linux") {

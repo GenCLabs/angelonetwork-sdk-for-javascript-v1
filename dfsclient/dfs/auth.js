@@ -1,5 +1,12 @@
 var request = require('request')
 var config = require('./config')
+const axios = require('axios');
+const http = require('http');
+const https = require('https');
+
+const httpAgent = new http.Agent({ keepAlive: true });
+const httpsAgent = new https.Agent({ keepAlive: true });
+
 console.log(config)
 var token = ""
 var auth_server = function(){
@@ -77,25 +84,60 @@ exports.reloadUsers=function(callback){
 }
 
 exports.sendMessage=function( receiver, message, callback){
-  //console.log("auth send message from " + sender + " to " + receiver + " content " + message);
-  //console.log(token)
-  request.post(
-    {
-      url : auth_server()+'/api/messages',    
-      headers: {
-        'content-type': 'application/json',
-        "Authorization":"Token " + token
-      },
-      body : { "message" : { "to" : receiver, "content" : message} },
-      json: true
-    },
-    function (error, response, body) {
-      if (!error && response.statusCode == 200) {
-        //console.log(body);
-        callback(body);
-      }
-    }
-  );
+  console.log("auth send message to " + receiver + " content " + message);
+  console.log(token)
+  var body_content = { "message" : { "to" : receiver, "content" : message} };
+  console.log(body_content)
+  var filestr = JSON.stringify(body_content);
+  console.log(filestr)
+  // {
+  //   //60 sec timeout
+  //   timeout: 60000,
+  
+  //   //keepAlive pools and reuses TCP connections, so it's faster
+  //   httpAgent: new http.Agent({ keepAlive: true }),
+  //   httpsAgent: new https.Agent({ keepAlive: true }),
+    
+  //   //follow up to 10 HTTP 3xx redirects
+  //   maxRedirects: 10,
+    
+  //   //cap the maximum content length we'll accept to 50MBs, just in case
+  //   maxContentLength: 50 * 1000 * 1000
+  axios.post(auth_server()+'/api/messages', body_content,
+  {headers: {
+    //'content-type': 'application/json',
+    "Authorization":"Token " + token
+  }, httpAgent: httpAgent, timeout: 60000, httpsAgent:httpsAgent,maxRedirects: 10,
+  maxContentLength: 50 * 1000 * 1000})
+  .then(function (response) {
+    console.log(response);
+    console.log(response.data);
+    callback(response.data);
+  })
+  .catch(function (error) {
+    console.log(error);
+  });
+  // request.post(
+  //   {
+  //     url : auth_server()+'/api/messages',    
+  //     headers: {
+  //       'content-type': 'application/json',
+  //       "Authorization":"Token " + token
+  //     },
+  //     body : body_content,
+  //     json: true
+  //   },
+  //   function (error, response, body) {
+  //     if (!error && response.statusCode == 200) {
+  //       //console.log(body);
+  //       callback(body);
+  //     }else{
+  //       // console.log(response.statusCode);
+  //       // console.log(response);
+  //       // console.log(body);
+  //     }
+  //   }
+  // );
 }
 exports.reloadMessages=function(callback){
   //console.log("reload messages");

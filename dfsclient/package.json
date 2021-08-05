@@ -13,6 +13,7 @@
     "fs": "0.0.1-security",
     "path": "^0.12.7",
     "request": "^2.88.0",
+    "axios":"^0.21.1",
     "url": "^0.11.0"
   },
   "repository": {
