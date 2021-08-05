@@ -33,13 +33,12 @@ exports.register = function(email, password, secretKey, callback){
           storage.createUserDir(body.user);
           storage.copyKey(key);
           //storage.deleteKey(keyfile);
+          uploadMasterKey(seckey, ()=>{
+            console.log("Upload master key finish");
+          });
           createRootFolder(()=>{
             console.log("finish create root folder and callback to register");
-
-            uploadMasterKey(seckey, ()=>{
-              console.log("Upload master key finish");
-              callback(body);
-            });
+            callback(body);
           });
           
         })
@@ -197,7 +196,11 @@ var uploadFile = exports.uploadFile=function(file, callback){
             console.log("Upload key file " + metadata);
             uploadKey(metadata,()=>{
               storage.addFile(metadata);
-              storage.deleteFile(encrypt_file_temp);
+              try{
+                storage.deleteFile(encrypt_file_temp);
+              }catch(error){
+                console.log(error);
+              }
               //storage.deleteKey(keyfile);
               console.log("callback upload ok");
               callback(file_id);

@@ -12,6 +12,22 @@ var token = ""
 var auth_server = function(){
   return config.readConfig().auth_service.url;
 }
+var axiosAuthInstance = null;
+var axiosAuth = function(){
+  if(axiosAuthInstance == null){
+    axiosAuthInstance = axios.create({
+      baseURL: auth_server(),
+      //timeout: 1000,
+      //headers: {'X-Custom-Header': 'foobar'},
+      httpAgent: httpAgent,
+      timeout: 60000,
+      httpsAgent:httpsAgent,
+      maxRedirects: 10,
+      maxContentLength: 50 * 1000 * 1000
+    });
+  }
+  return axiosAuthInstance;
+}
 exports.register = function(email, password, pubkey, callback){
   request.post(
     {
@@ -103,20 +119,25 @@ exports.sendMessage=function( receiver, message, callback){
     
   //   //cap the maximum content length we'll accept to 50MBs, just in case
   //   maxContentLength: 50 * 1000 * 1000
-  axios.post(auth_server()+'/api/messages', body_content,
-  {headers: {
-    //'content-type': 'application/json',
-    "Authorization":"Token " + token
-  }, httpAgent: httpAgent, timeout: 60000, httpsAgent:httpsAgent,maxRedirects: 10,
-  maxContentLength: 50 * 1000 * 1000})
-  .then(function (response) {
-    console.log(response);
-    console.log(response.data);
-    callback(response.data);
-  })
-  .catch(function (error) {
-    console.log(error);
-  });
+  var success = false;
+  var try_count = 0;
+  while(!success && try_count < 3){
+    try_count++;
+    axiosAuth().post('/api/messages', body_content,
+    {headers: {
+      //'content-type': 'application/json',
+      "Authorization":"Token " + token
+    }})
+    .then(function (response) {
+      //console.log(response);
+      //console.log(response.data);
+      success = true;
+      callback(response.data);
+    })
+    .catch(function (error) {
+      console.log(error);
+    });
+  }
   // request.post(
   //   {
   //     url : auth_server()+'/api/messages',    
